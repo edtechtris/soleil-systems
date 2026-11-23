@@ -183,7 +183,7 @@
     const picked = new Set(), viewed = new Set(), revealed = [];
     const order = shuffle(step.actions);                    // mixed order, per play
     const started = Date.now(), moodBefore = S.mood;
-    let startOpened = false, stuckTimer = null, tipShown = false;
+    let startOpened = false, stuckTimer = null, tipShown = false, callRevealed = false;
     const callFace = step.call ? val(step.call.face, S) : null;
 
     T.track('experienced', `step/${step.id}`, val(step.title, S), null, { season: step.season, role: step.role, mood: S.mood, today: C.fmt(S.today) });
@@ -242,6 +242,7 @@
     if (st.kind === 'call') ring(true);
     prompt(firstGame, 'start', $('.start'), 'Select this to start.');
     $('.start-item').onclick = () => {
+      if (startOpened) { openClue(st.opens); return; }
       ring(false);
       startOpened = true;
       $('.start-item').classList.add('opened');
@@ -285,8 +286,8 @@
           <p class="quote">“${esc(val(step.call.text, S))}”</p>
         </div>`;
         $('#face').src = FACE(callFace);
-        playVoice(first);
-        $('.play', v).onclick = () => playVoice(false);
+        playVoice();
+        $(".play", v).onclick = () => playVoice();
       } else {
         v.innerHTML = `<div class="paper"><button class="x" aria-label="Close">×</button><h3><img src="${c.icon}" alt="">${esc(c.label)}</h3>${val(c.body, S)}</div>`;
         if (first) reveal(id);
@@ -294,21 +295,23 @@
       $('.x', v).onclick = () => { v.hidden = true; $$('.clue').forEach(b => b.classList.remove('on')); };
     }
 
-    function playVoice(first) {
+    function playVoice() {
       stopVoice();
       const v = $('.viewer');
-      const done = () => { v.classList.remove('talking'); if (first) { reveal(st.opens); first = false; } };
+      const done = () => {
+        v.classList.remove('talking'); v.querySelector('.skip')?.remove();
+        if (!callRevealed) { callRevealed = true; reveal(st.opens); }
+      };
       v.classList.add('talking');
       voice = new Audio(val(step.call.audio, S));
       voice.muted = !soundOn;
+      const mine = voice;
       voice.onended = done;
-      voice.onerror = () => setTimeout(done, 1200);
-      voice.play().catch(() => setTimeout(done, 1200));
-      if (first) { // don't make people wait forever if the clip stalls
-        const skip = h('<button class="skip">Skip</button>');
-        v.querySelector('.wave').appendChild(skip);
-        v.querySelector('.skip').onclick = () => { stopVoice(); done(); v.querySelector('.skip')?.remove(); };
-        voice.addEventListener('ended', () => v.querySelector('.skip')?.remove());
+      voice.onerror = () => setTimeout(() => { if (voice === mine) done(); }, 1200);
+      voice.play().catch(() => setTimeout(() => { if (voice === mine) done(); }, 1200));
+      if (!callRevealed && !v.querySelector('.skip')) { // don't make people wait if the clip stalls
+        v.querySelector('.wave').appendChild(h('<button class="skip">Skip</button>'));
+        v.querySelector('.skip').onclick = () => { stopVoice(); done(); };
       }
     }
 
@@ -344,7 +347,7 @@
         T.track('selected', `step/${step.id}/action/${id}`, val(a.label, S), null, { order: picked.size, position, revealedFrom: a.from, cluesViewed: [...viewed] });
       }
       drawActions();
-      if (picked.size >= step.pick) prompt(firstGame, 'pass', $('.pass'), 'When you are done, select this button.');
+      if (picked.size >= step.pick) prompt(firstGame, 'pass', $('.tray'), 'When you are done, select the button below.', 'up');
     }
 
     /* --- tips --- */
@@ -367,13 +370,13 @@
   }
 
   /* first-time prompts: spring, first step only, each shown once */
-  function prompt(on, key, anchor, text) {
+  function prompt(on, key, anchor, text, cls = '') {
     if (!on || S.prompts.has(key) || !anchor) return;
     S.prompts.add(key);
     $$('.coach').forEach(c => c.remove());
-    const el = h(`<div class="coach" role="note">${esc(text)}<button aria-label="Dismiss">×</button></div>`).firstElementChild;
+    const el = h(`<div class="coach ${cls}" role="note">${esc(text)}<button aria-label="Dismiss">×</button></div>`).firstElementChild;
     anchor.appendChild(el);
-    el.querySelector('button').onclick = () => el.remove();
+    el.querySelector('button').onclick = e => { e.stopPropagation(); el.remove(); };
     setTimeout(() => el.remove(), 9000);
   }
 

@@ -522,7 +522,7 @@
         card('Work orders · 18 Alder Lane', ['<b>Visit 1, Mon, Oct 13:</b> remove 22 panels before roof work.', '<b>Visit 2:</b> reinstall and restart.', s.flags.cracked ? '<b>Note:</b> two panels cracked by the roofer.' : '']) },
       { id: 'roof', label: 'Roof', icon: ICON + 'home.webp', kind: 'key', hotspot: { x: 50, y: 30 }, body: () =>
         img(ART + 'house-fall-roofwork.webp', 'Roof with shingles stripped') + '<p>New underlayment and shingles. New roofs often need new mounting points, and every new hole needs sealing.</p>' },
-      { id: 'forecast', label: 'Forecast', icon: ICON + 'information.webp', kind: 'key', body: () =>
+      { id: 'forecast', label: 'Forecast', icon: ICON + 'information.webp', kind: 'optional', body: () =>
         card('Forecast', ['Dry through October.', '<b>Heavy rain</b> expected the first week of November.']) },
       { id: 'site', label: 'Site', icon: ICON + 'location-map.webp', kind: 'optional', body: () =>
         card('Site notes', ['The roofer’s dumpster and delivery trucks use the driveway Oct 14–19.', 'The garage is clear.']) }

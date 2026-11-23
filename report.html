@@ -32,13 +32,15 @@
   .empty { color: var(--muted); font-style: italic; }
   .note { font-size: 13px; color: var(--muted); }
   @media (max-width: 760px) { .stats { grid-template-columns: 1fr 1fr; } .bar { width: 140px; } }
+.scroll { overflow-x: auto; }
+@media (max-width: 600px) { .barcol, td:nth-child(2):has(.bar) { display: none; } table { font-size: 14px; } }
 </style>
 </head>
 <body>
 <main>
   <p><a href="index.html">← Back to the game</a></p>
   <h1>Starting with Soleil · Results</h1>
-  <p class="sub">Where players catch the right moves, guess them, or miss them. Soleil Systems is a fictional company.</p>
+  <p class="sub">This report shows which correct actions players chose, which they missed, and which wrong actions they avoided. Soleil Systems is a fictional company.</p>
   <div class="load">
     <button id="local">Use data from this browser</button>
     <label class="file">Load exported JSON files<input id="files" type="file" accept=".json" multiple></label>
@@ -53,7 +55,7 @@
   const SEASONS = ['spring', 'summer', 'fall', 'winter'];
   let rows = [];
   const ext = (st, key) => { const e = (st.context && st.context.extensions) || {}; const k = Object.keys(e).find(x => x.endsWith('/ext/' + key)); return k ? e[k] : undefined; };
-  const tail = id => id.split('/game/')[1] || id;
+  const tail = id => { const m = id.match(/\/((?:step|decision|season|intro)\/.*|game)$/); return m ? m[1] : id; }; // works with any activity base
 
   document.getElementById('local').onclick = () => {
     let all = []; try { all = JSON.parse(localStorage.getItem(STORE)) || []; } catch (e) {}
@@ -86,11 +88,12 @@
           d.n++; d[r.outcome]++;
         }
         if (verb === 'experienced' && id.startsWith('step/')) { const step = id.split('/')[1]; stepsSeen[step] = (stepsSeen[step] || new Set()).add(s.sessionId); }
-        if (verb === 'viewed') { const [, step, , clue] = id.split('/'); const k = step + ' · ' + clue; clues[k] = clues[k] || { step, clue, sessions: new Set() }; clues[k].sessions.add(s.sessionId); }
+        const cm = verb === 'viewed' && id.match(/^step\/([^/]+)\/clue\/([^/]+)$/);
+        if (cm) { const [, step, clue] = cm; const k = step + ' · ' + clue; const name = (st.object.definition && st.object.definition.name && st.object.definition.name['en-US']) || clue; clues[k] = clues[k] || { step, clue: name, sessions: new Set() }; clues[k].sessions.add(s.sessionId); }
         if (verb === 'completed' && id.startsWith('season/')) { const sea = id.split('/')[1]; (seasonEnd[sea] = seasonEnd[sea] || []).push({ mood: ext(st, 'mood'), days: ext(st, 'days') }); }
       });
     });
-    document.getElementById('status').textContent = `${played.length} session(s) from ${source}.`;
+    document.getElementById('status').textContent = `${played.length} ${played.length === 1 ? 'game' : 'games'} from ${source}.`;
     document.getElementById('csv').disabled = !rows.length;
     const out = document.getElementById('out');
     if (!rows.length) { out.innerHTML = '<p class="empty" style="margin-top:20px">No gameplay data yet.</p>'; return; }
@@ -100,40 +103,41 @@
     const caught = doRows.filter(r => r.outcome === 'caught').length, guessed = doRows.filter(r => r.outcome === 'guessed').length;
     const avoidRows = rows.filter(r => r.type === 'avoid');
     let html = `<div class="stats">
-      <div class="stat"><b>${played.length}</b><span>players (sessions)</span></div>
-      <div class="stat"><b>${pct(finished.length, played.length)}%</b><span>finished the year</span></div>
-      <div class="stat"><b>${pct(caught, doRows.length)}%</b><span>key moves caught after checking the clue</span></div>
-      <div class="stat"><b>${pct(guessed, doRows.length)}%</b><span>key moves made without checking</span></div>
+      <div class="stat"><b>${played.length}</b><span>games played</span></div>
+      <div class="stat"><b>${pct(finished.length, played.length)}%</b><span>finished all four seasons</span></div>
+      <div class="stat"><b>${pct(caught, doRows.length)}%</b><span>correct actions chosen after checking the information</span></div>
+      <div class="stat"><b>${pct(guessed, doRows.length)}%</b><span>correct actions chosen without checking the information</span></div>
     </div>
-    <p class="note" style="margin-top:10px">Traps avoided: ${pct(avoidRows.filter(r => r.outcome === 'avoided').length, avoidRows.length)}% of ${avoidRows.length} chances.</p>`;
+    <p class="note" style="margin-top:10px">Wrong actions avoided: ${pct(avoidRows.filter(r => r.outcome === 'avoided').length, avoidRows.length)}% (out of ${avoidRows.length}).</p>`;
 
-    html += `<h2>Key moves</h2><p class="sub">Things players should do. "Guessed" means they did it without opening the clue that pointed to it.</p>
-      <div class="legend"><span><i style="background:var(--caught)"></i>Caught</span><span><i style="background:var(--guessed)"></i>Guessed</span><span><i style="background:var(--missed)"></i>Missed</span></div>`;
+    html += `<h2>Correct actions</h2><p class="sub">Actions players should choose. "Guessed" means the player chose it without opening the information that pointed to it.</p>
+      <div class="legend"><span><i style="background:var(--caught)"></i>Chose it after checking</span><span><i style="background:var(--guessed)"></i>Guessed</span><span><i style="background:var(--missed)"></i>Missed</span></div>`;
     html += table(Object.entries(decisions).filter(([, d]) => d.type === 'do'), d => [['caught', 'var(--caught)'], ['guessed', 'var(--guessed)'], ['missed', 'var(--missed)']]);
-    html += `<h2>Traps</h2><p class="sub">Reasonable-sounding moves that cost the homeowner time.</p>
-      <div class="legend"><span><i style="background:var(--avoided)"></i>Avoided</span><span><i style="background:var(--fell)"></i>Fell for it</span></div>`;
+    html += `<h2>Wrong actions</h2><p class="sub">Actions that seem reasonable but cost the homeowner time or money.</p>
+      <div class="legend"><span><i style="background:var(--avoided)"></i>Avoided</span><span><i style="background:var(--fell)"></i>Chose it</span></div>`;
     html += table(Object.entries(decisions).filter(([, d]) => d.type === 'avoid'), d => [['avoided', 'var(--avoided)'], ['fell_for', 'var(--fell)']]);
 
-    html += `<h2>Clues opened</h2><p class="sub">Share of players who opened each clue when they had the chance.</p><table><tr><th>Step</th><th>Clue</th><th class="num">Opened</th></tr>`;
-    Object.values(clues).sort((a, b) => a.step.localeCompare(b.step)).forEach(c => {
+    html += `<h2>Information opened</h2><p class="sub">Percent of players who opened each item.</p><div class="scroll"><table><tr><th>Step</th><th>Item</th><th class="num">Opened</th></tr>`;
+    Object.values(clues).sort((a, b) => SEASONS.indexOf(a.step.split('-')[0]) - SEASONS.indexOf(b.step.split('-')[0])).forEach(c => {
       const n = (stepsSeen[c.step] || new Set()).size;
-      html += `<tr><td>${c.step}</td><td>${c.clue}</td><td class="num">${pct(c.sessions.size, n)}% <small>${c.sessions.size} of ${n}</small></td></tr>`;
+      const [sea, ...rl] = c.step.split('-'); const stepName = sea[0].toUpperCase() + sea.slice(1) + ' · ' + rl.join(' ').replace('care 2', 'care callback');
+      html += `<tr><td>${stepName}</td><td>${c.clue}</td><td class="num">${pct(c.sessions.size, n)}% <small>${c.sessions.size} of ${n}</small></td></tr>`;
     });
-    html += `</table><h2>The homeowner's year</h2><table><tr><th>Season</th><th class="num">Avg. days waiting</th><th class="num">Avg. mood at season end (0–100)</th></tr>`;
+    html += `</table></div><h2>Dana's year</h2><div class="scroll"><table><tr><th>Season</th><th class="num">Average days with a problem</th><th class="num">Average mood at season end (0 to 100)</th></tr>`;
     SEASONS.forEach(se => { const a = seasonEnd[se] || []; if (!a.length) return;
       const avg = k => Math.round(a.reduce((x, y) => x + (y[k] || 0), 0) / a.length);
       html += `<tr><td>${se[0].toUpperCase() + se.slice(1)}</td><td class="num">${avg('days')}</td><td class="num">${avg('mood')}</td></tr>`; });
-    html += `</table><p class="note" style="margin-top:20px">Each play-through counts as one session. Replays by the same player count again.</p>`;
+    html += `</table></div><p class="note" style="margin-top:20px">Each game played counts once. If a player plays again, that counts as another game.</p>`;
     out.innerHTML = html;
 
     function table(list, keys) {
       list.sort((a, b) => SEASONS.indexOf(a[1].season) - SEASONS.indexOf(b[1].season));
-      let t = `<table><tr><th>Decision</th><th></th>${keys().map(k => `<th class="num">${k[0].replace('_', ' ')}</th>`).join('')}</tr>`;
+      let t = `<div class="scroll"><table><tr><th>Action</th><th class="barcol"></th>${keys().map(k => `<th class="num">${({ caught: 'Checked', guessed: 'Guessed', missed: 'Missed', avoided: 'Avoided', fell_for: 'Chose it' })[k[0]]}</th>`).join('')}</tr>`;
       list.forEach(([, d]) => {
-        t += `<tr><td>${d.label}<small>${d.season} · ${d.role} · ${d.n} players</small></td><td><div class="bar">${keys().map(k => `<span style="width:${pct(d[k[0]], d.n)}%;background:${k[1]}"></span>`).join('')}</div></td>` +
+        t += `<tr><td>${d.label}<small>${d.season} · ${d.role} · ${d.n} ${d.n === 1 ? 'game' : 'games'}</small></td><td><div class="bar">${keys().map(k => `<span style="width:${pct(d[k[0]], d.n)}%;background:${k[1]}"></span>`).join('')}</div></td>` +
           keys().map(k => `<td class="num">${pct(d[k[0]], d.n)}%</td>`).join('') + '</tr>';
       });
-      return t + '</table>';
+      return t + '</table></div>';
     }
   }
 })();

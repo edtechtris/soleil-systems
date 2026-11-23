@@ -34,15 +34,15 @@
   const ART = 'assets/art/', ICON = 'assets/icons/';
   const ROLES = {
     care: { name: 'Customer Care', icon: ICON + 'team-customer-care.webp', color: '#2B7C76',
-      line: 'Answers calls and keeps homeowners in the loop.', touches: "Dana's phone calls and texts" },
+      line: 'Answers homeowner calls and emails. Keeps homeowners updated.' },
     dispatch: { name: 'Dispatch & Scheduling', icon: ICON + 'team-dispatch-scheduling.webp', color: '#6B5AA6',
-      line: 'Books the right tech, at the right time, with the right parts.', touches: 'Who comes to the house, and when' },
+      line: 'Schedules service visits. Assigns the right technician and parts.' },
     field: { name: 'Field Service', icon: ICON + 'team-field-service.webp', color: '#C4553A',
-      line: 'Fixes systems on site and reports what was done.', touches: 'The roof and the inverter' },
+      line: 'Repairs, removes and reinstalls solar systems at homes.' },
     billing: { name: 'Billing & Collections', icon: ICON + 'team-billing-collections.webp', color: '#B5832A',
-      line: 'Keeps payments and accounts accurate.', touches: "Dana's monthly lease payment" },
+      line: 'Manages monthly payments, failed payments and final bills.' },
     accounts: { name: 'Account Services', icon: ICON + 'team-account-services.webp', color: '#3F6E9E',
-      line: 'Handles contracts, transfers and home sales.', touches: 'The lease that comes with the house' }
+      line: 'Manages lease contracts, including transfers when a home is sold.' }
   };
   const LEADS = {
     care: { who: 'Imani Okafor', role: 'Care lead', img: ART + 'imani-okafor.webp' },
@@ -52,10 +52,10 @@
   const TEAM_TIP = role => ({ who: 'A teammate', role: ROLES[role].name, img: ROLES[role].icon });
 
   const SEASONS = {
-    spring: { name: 'Spring', event: "Dana's system stops producing", icon: ICON + 'production-stopped.webp', tint: '#7FAF5B' },
+    spring: { name: 'Spring', event: "Dana's solar system stops working", icon: ICON + 'production-stopped.webp', tint: '#7FAF5B' },
     summer: { name: 'Summer', event: "Dana's payment fails", icon: ICON + 'expired.webp', tint: '#D9A23A' },
     fall:   { name: 'Fall', event: 'Dana gets a new roof', icon: ICON + 'solar-panels.webp', tint: '#C4663A' },
-    winter: { name: 'Winter', event: 'Dana sells the house', icon: ICON + 'home.webp', tint: '#5A86A8' }
+    winter: { name: 'Winter', event: 'Dana sells her house', icon: ICON + 'home.webp', tint: '#5A86A8' }
   };
 
   const chart = (vals, labels, unit, hi) => {
@@ -76,9 +76,9 @@
     daysAtStart: 3, // the system stopped on Friday
     title: 'Dana is calling. Her app shows zero.',
     scene: () => ART + 'house-spring-fault.webp',
-    start: { kind: 'call', label: 'Answer the call', sub: () => 'Incoming call · Dana Reyes', opens: 'call' },
+    start: { kind: 'call', label: 'Answer the call', sub: () => 'Incoming call · Dana Rodriguez', opens: 'call' },
     call: { audio: () => 'assets/audio/spring_care_call.mp3', face: () => 'neutral',
-      text: () => "Hi, this is Dana Reyes on Alder Lane. My solar app has said zero since Friday. I already closed and reopened the app. Oh, and the little box on the side of the garage has a red light blinking, if that matters. Can someone come take a look?" },
+      text: () => "Hi, this is Dana Rodriguez on Alder Lane. My solar app has said zero since Friday. I already closed and reopened the app. Oh, and the little box on the side of the garage has a red light blinking, if that matters. Can someone come take a look?" },
     clues: [
       { id: 'call', label: "Dana's call", icon: ICON + 'answer-call.webp', kind: 'start' },
       { id: 'monitoring', label: 'Monitoring', icon: ICON + 'monitoring.webp', kind: 'optional', body: () =>
@@ -86,7 +86,7 @@
         `<p><b>Last check-in:</b> 9 minutes ago.</p><p>Output dropped to 0 on Friday at 2:10 PM.</p>` }
     ],
     pick: 2,
-    tip: Object.assign({}, LEADS.care, { text: "Monitoring tells you whether the system is still online. That rules a lot in or out before you start fixing things." }),
+    tip: Object.assign({}, LEADS.care, { text: "Check Monitoring first. It shows if the system is still online." }),
     actions: [
       { id: 'photo', from: 'call', label: 'Ask Dana to text a photo of the box’s lights' },
       { id: 'breaker', from: 'call', label: 'Walk Dana through a breaker reset' },
@@ -140,7 +140,7 @@
         card('SX-7 inverter', ['2 in stock at the warehouse.', 'Only <b>SX-7-certified</b> techs may replace this unit.', 'Parts go on the truck when the visit is booked with the fault code.']) }
     ],
     pick: 2,
-    tip: Object.assign({}, LEADS.dispatch, { text: 'Read the ticket before you book. The first opening isn’t always the right one.' }),
+    tip: Object.assign({}, LEADS.dispatch, { text: 'Read the ticket before you book a technician. The first open time is not always the best choice.' }),
     actions: [
       { id: 'confirm', from: 'ticket', label: 'Call Dana to confirm she’ll be home' },
       { id: 'urgent', from: 'ticket', label: 'Mark the ticket urgent and wait for an earlier opening' },
@@ -176,7 +176,7 @@
       if (P(p, 'urgent')) L.push({ t: 'info', x: 'Marked urgent. No earlier opening came up.' });
       s.flags.field = first === 'ray' ? { tech: 'ray', date: D(3, 17), part: s.flags.photo } : { tech: 'ray', date: D(3, 24), part: !!s.flags.photo, delayed: true };
       if (s.flags.confirm) { L.push({ t: 'good', x: 'Dana confirmed she’d be home and gave the gate code.' }); mood(s, 5); }
-      else if (!s.flags.expectSpring) { L.push({ t: 'bad', x: 'Dana texted: "Is anyone coming? Nobody’s called me."' }); M.push('Nobody had told Dana what was happening. Silence felt like being ignored.'); mood(s, -10); text(s, 'Is anyone coming? Nobody’s called me.'); }
+      else if (!s.flags.expectSpring) { L.push({ t: 'bad', x: 'Dana texted: "Is anyone coming? Nobody’s called me."' }); M.push('Nobody told Dana what was happening, so she felt ignored.'); mood(s, -10); text(s, 'Is anyone coming? Nobody’s called me.'); }
       else M.push('Nobody confirmed the visit with Dana.');
       return { lines: L, missed: M };
     }
@@ -185,7 +185,7 @@
     id: 'spring-field', season: 'spring', role: 'field',
     daysNow: sinceFriday,
     today: s => s.flags.field.date,
-    title: s => s.flags.field.delayed ? 'Ray finally gets to Dana’s house.' : 'You’re at Dana’s house.',
+    title: s => s.flags.field.delayed ? 'Ray visits Dana’s house a week later.' : 'You are at Dana’s house.',
     scene: () => ART + 'house-spring-fault.webp',
     start: { kind: 'order', label: 'Read the work order', sub: s => `Ray Brennan · ${fmt(s.flags.field.date)}`, opens: 'order' },
     clues: [
@@ -201,7 +201,7 @@
         card('SX-7 fault codes', ['<b>E-21:</b> internal power stage failure.', 'Power-cycling does not clear it.', 'Replace the unit.']) }
     ],
     pick: 2,
-    tip: Object.assign({}, LEADS.field, { text: 'Before you pack up, make sure it actually works. What you leave behind is what Care has to explain.' }),
+    tip: Object.assign({}, LEADS.field, { text: 'Before you leave, check that the system works.' }),
     actions: [
       { id: 'test', from: 'order', label: 'Test production before you leave' },
       { id: 'clean', from: 'order', label: 'Clean the panels while you’re up there' },
@@ -209,7 +209,7 @@
       { id: 'reset', from: 'inverter', label: 'Power-cycle the inverter and see if it clears' }
     ],
     decisions: [
-      { id: 'spring.field.replace', label: 'Fixed the actual fault', type: 'do', actions: ['replace'], clues: ['inverter'] },
+      { id: 'spring.field.replace', label: 'Replaced the faulty inverter', type: 'do', actions: ['replace'], clues: ['inverter'] },
       { id: 'spring.field.test', label: 'Tested before leaving', type: 'do', actions: ['test'], clues: [] },
       { id: 'spring.field.reset', label: "Didn't count on a reset", type: 'avoid', actions: ['reset'], clues: ['manual'] },
       { id: 'spring.field.clean', label: "Didn't spend the visit cleaning panels", type: 'avoid', actions: ['clean'], clues: [] }
@@ -244,7 +244,7 @@
     today: s => nextMonday(s.flags.fixDate),
     title: 'Dana is calling back.',
     scene: s => s.flags.partial ? ART + 'house-spring-fixed.webp' : ART + 'house-spring-fixed.webp',
-    start: { kind: 'call', label: 'Answer the call', sub: () => 'Incoming call · Dana Reyes', opens: 'call' },
+    start: { kind: 'call', label: 'Answer the call', sub: () => 'Incoming call · Dana Rodriguez', opens: 'call' },
     call: {
       calm: s => s.days.spring <= 7 && s.mood >= 55,
       audio: s => s.days.spring <= 7 && s.mood >= 55 ? 'assets/audio/spring_followup_calm.mp3' : 'assets/audio/spring_followup_upset.mp3',
@@ -282,16 +282,16 @@
     resolve(s, p) {
       const L = [], M = [];
       if (P(p, 'confirmprod')) {
-        if (!s.flags.partial) { L.push({ t: 'good', x: 'Monitoring backs it up: output is normal.' }); mood(s, 4); }
-        else { L.push({ t: 'bad', x: 'Monitoring showed 60%. Telling Dana it was normal didn’t make it true.' }); mood(s, -5); }
+        if (!s.flags.partial) { L.push({ t: 'good', x: 'Monitoring confirms that output is normal.' }); mood(s, 4); }
+        else { L.push({ t: 'bad', x: 'Monitoring showed 60%, but you told Dana the system was normal.' }); mood(s, -5); }
       }
       if (P(p, 'recheck')) {
         if (s.flags.partial) { L.push({ t: 'good', x: 'The production check found the loose connector. Fixed the next week.' }); s.flags.partial = false; wait(s, 7); }
         else L.push({ t: 'info', x: 'A production check found nothing wrong.' });
       }
       if (P(p, 'explain')) { L.push({ t: 'good', x: 'Dana knows exactly what was fixed.' }); mood(s, 5); }
-      if (P(p, 'close')) { L.push({ t: 'bad', x: 'Ticket closed without checking. Dana hung up unsure.' }); mood(s, -8); }
-      if (s.flags.partial) { s.flags.lowOutput = true; M.push('Output stayed at 60%. It will come up again.'); }
+      if (P(p, 'close')) { L.push({ t: 'bad', x: 'Ticket closed without checking. Dana was not sure the problem was fixed.' }); mood(s, -8); }
+      if (s.flags.partial) { s.flags.lowOutput = true; M.push('Output stayed at 60%. This problem will come up again later.'); }
       return { lines: L, missed: M };
     }
   },
@@ -308,7 +308,7 @@
       { id: 'alert', label: 'Payment alert', icon: ICON + 'issue-alert.webp', kind: 'start', body: () =>
         card('Autopay failed · Jul 1', ['<b>Reason:</b> card ending 0623 expired (06/25).', '<b>History:</b> autopay paid on time every month since 2019.', '<b>Automatic email:</b> "Your payment failed" sent Jul 2.']) },
       { id: 'history', label: 'Account history', icon: ICON + 'details-logs.webp', kind: 'key', body: s =>
-        card('Dana Reyes · since 2019', [
+        card('Dana Rodriguez · since 2019', [
           `<b>Spring:</b> system down ${s.days.spring} days. ${s.flags.lowOutput ? 'Output still low.' : 'Fixed.'}`,
           '<b>Best contact:</b> ' + (s.flags.confirm ? 'phone, home Tue and Thu.' : 'not recorded.')
         ]) },
@@ -316,7 +316,7 @@
         card('Late fees', ['$25 late fee after 15 days unpaid (Jul 16).', 'Automatic reminders go out on days 2 and 9.', 'One courtesy waiver per year.']) }
     ],
     pick: 3,
-    tip: Object.assign(TEAM_TIP('billing'), { text: 'Ask yourself: does Dana even know there’s a problem? And will what you do fix next month too?' }),
+    tip: Object.assign(TEAM_TIP('billing'), { text: 'Check whether Dana knows about the problem. Check whether your fix also covers next month.' }),
     actions: [
       { id: 'call', from: 'alert', label: 'Call Dana about the failed payment' },
       { id: 'wait', from: 'alert', label: 'Let the automatic reminders run' },
@@ -342,7 +342,7 @@
       if (P(p, 'wait')) L.push({ t: 'info', x: 'Reminders went out on schedule.' });
       if (!reached) { M.push('Nobody talked to Dana. She found out from a second email and a late fee.'); mood(s, -12); wait(s, 15); s.flags.lateFee = true; text(s, 'Two "payment failed" emails and now a late fee? Nobody called me.'); }
       s.flags.noteSummer = P(p, 'note');
-      if (!s.flags.noteSummer) M.push('No note. If Dana calls Care, they start from scratch.');
+      if (!s.flags.noteSummer) M.push('No note was added. If Dana calls Care, Care will not know what happened.');
       wait(s, 3);
       return { lines: L, missed: M };
     }
@@ -352,7 +352,7 @@
     today: () => D(6, 10),
     title: 'Dana is calling about a billing email.',
     scene: () => ART + 'house-summer.webp',
-    start: { kind: 'call', label: 'Answer the call', sub: () => 'Incoming call · Dana Reyes', opens: 'call' },
+    start: { kind: 'call', label: 'Answer the call', sub: () => 'Incoming call · Dana Rodriguez', opens: 'call' },
     call: {
       audio: s => s.flags.autopayFixed ? 'assets/audio/summer_care_calm.mp3' : 'assets/audio/summer_care_upset.mp3',
       face: s => s.flags.autopayFixed ? 'confused' : 'angry',
@@ -376,7 +376,7 @@
         card('Late fees', ['One courtesy waiver per year.', 'Dana has used: none.']) }
     ],
     pick: 2,
-    tip: Object.assign({}, LEADS.care, { text: 'Look at what the account actually shows before you answer. The same call can need a different fix.' }),
+    tip: Object.assign({}, LEADS.care, { text: 'Check the account before you answer Dana.' }),
     actions: [
       { id: 'transfer', from: 'call', label: 'Transfer Dana to Billing' },
       { id: 'explain', from: 'notes', label: 'Explain the email went out before the card was updated' },
@@ -391,16 +391,16 @@
     resolve(s, p) {
       const L = [], M = [];
       if (P(p, 'explain')) {
-        if (s.flags.autopayFixed) { L.push({ t: 'good', x: 'Dana relaxes. The email was from before the fix.' }); mood(s, 5); }
+        if (s.flags.autopayFixed) { L.push({ t: 'good', x: 'Dana understood. The email was sent before the card was updated.' }); mood(s, 5); }
         else { L.push({ t: 'bad', x: 'The card was never updated. Dana got another failure email in August.' }); mood(s, -10); }
       }
       if (P(p, 'updatecard')) {
         if (!s.flags.autopayFixed) { L.push({ t: 'good', x: 'Card updated on autopay. July and August are covered.' }); s.flags.autopayFixed = true; s.flags.julyPaid = true; mood(s, 5); }
         else L.push({ t: 'info', x: 'The card was already updated. Dana read her number out again anyway.' });
       }
-      if (P(p, 'transfer')) { L.push({ t: 'bad', x: 'Dana waited on hold for Billing and explained everything again.' }); mood(s, -8); }
-      if (P(p, 'waive')) { if (s.flags.lateFee) { L.push({ t: 'good', x: 'Late fee waived. After six years, Dana appreciated it.' }); s.flags.lateFee = false; mood(s, 5); } else L.push({ t: 'info', x: 'There was no fee to waive.' }); }
-      if (P(p, 'recap')) { L.push({ t: 'good', x: 'Dana knows exactly where things stand.' }); mood(s, 3); }
+      if (P(p, 'transfer')) { L.push({ t: 'bad', x: 'Dana waited on hold for Billing. Then she explained everything again.' }); mood(s, -8); }
+      if (P(p, 'waive')) { if (s.flags.lateFee) { L.push({ t: 'good', x: 'Late fee waived. Dana was grateful.' }); s.flags.lateFee = false; mood(s, 5); } else L.push({ t: 'info', x: 'There was no fee to waive.' }); }
+      if (P(p, 'recap')) { L.push({ t: 'good', x: 'Dana knows her card, autopay and next payment date.' }); mood(s, 3); }
       if (!s.flags.autopayFixed) { M.push('Autopay still has the expired card.'); wait(s, 30); }
       if (s.flags.lateFee) M.push('The late fee is still on Dana’s account.');
       return { lines: L, missed: M };
@@ -413,7 +413,7 @@
     today: () => D(8, 29),
     title: 'Dana is getting a new roof.',
     scene: () => ART + 'house-fall.webp',
-    start: { kind: 'call', label: 'Answer the call', sub: () => 'Incoming call · Dana Reyes', opens: 'call' },
+    start: { kind: 'call', label: 'Answer the call', sub: () => 'Incoming call · Dana Rodriguez', opens: 'call' },
     call: {
       audio: s => s.mood >= 50 ? 'assets/audio/fall_care_calm.mp3' : 'assets/audio/fall_care_wary.mp3',
       face: s => s.mood >= 50 ? 'happy' : 'meh',
@@ -448,7 +448,7 @@
       s.flags.rooferDate = P(p, 'date'); s.flags.feeExplained = P(p, 'fee'); s.flags.expectFall = P(p, 'expect');
       s.flags.removalOpen = P(p, 'both') || P(p, 'removal'); s.flags.reinstallOpen = P(p, 'both');
       if (P(p, 'roofer')) { s.flags.rooferRemoved = true; L.push({ t: 'bad', x: 'The lease says only Soleil Systems crews can remove the panels.' }); }
-      if (P(p, 'both')) L.push({ t: 'good', x: 'Removal and reinstall are both on Dispatch’s board.' });
+      if (P(p, 'both')) L.push({ t: 'good', x: 'Dispatch received both the removal and reinstall requests.' });
       else if (P(p, 'removal')) M.push('Only removal was opened. Nobody asked for the panels to go back up.');
       else { L.push({ t: 'bad', x: 'No request was opened.' }); M.push('Without a request, Dispatch never sees this job.'); }
       if (s.flags.rooferDate) L.push({ t: 'good', x: 'Saved: Peak Roofing, starts Tue, Oct 14, about 5 days.' });
@@ -493,15 +493,15 @@
     ],
     decisions: [
       { id: 'fall.dispatch.removal', label: 'Removal before the roof starts', type: 'do', actions: ['r13'], clues: ['requests', 'roofer'] },
-      { id: 'fall.dispatch.reinstall', label: 'Booked the reinstall ahead', type: 'do', actions: ['i21'], clues: ['crews'] },
+      { id: 'fall.dispatch.reinstall', label: 'Booked the reinstall in advance', type: 'do', actions: ['i21'], clues: ['crews'] },
       { id: 'fall.dispatch.wait', label: "Didn't wait to book the reinstall", type: 'avoid', actions: ['iwait'], clues: ['jobs'] },
       { id: 'fall.dispatch.confirm', label: 'Confirmed dates with Dana', type: 'do', actions: ['confirm'], clues: [] }
     ],
     resolve(s, p) {
       const L = [], M = [];
-      if (s.flags.rooferRemoved) { L.push({ t: 'bad', x: 'Too late: the roofer pulled the panels himself. Two cracked, and the lease doesn’t cover them.' }); mood(s, -12); s.flags.cracked = true; }
+      if (s.flags.rooferRemoved) { L.push({ t: 'bad', x: 'The roofer removed the panels himself. Two cracked, and the lease doesn’t cover them.' }); mood(s, -12); s.flags.cracked = true; }
       if (P(p, 'r13')) L.push({ t: 'good', x: 'Removal set for the day before the roofer starts.' });
-      else if (P(p, 'r14')) { L.push({ t: 'bad', x: 'The crew and the roofer showed up the same morning. The roofer lost a day.' }); wait(s, 1); mood(s, -5); }
+      else if (P(p, 'r14')) { L.push({ t: 'bad', x: 'The crew and the roofer arrived the same morning. The roofer lost a day of work.' }); wait(s, 1); mood(s, -5); }
       else if (!s.flags.rooferRemoved) { L.push({ t: 'bad', x: 'No removal was booked. The roofer arrived and the panels were still on.' }); wait(s, 7); mood(s, -10); }
       if (P(p, 'i21')) { L.push({ t: 'good', x: s.flags.reinstallOpen ? 'Reinstall set for Oct 21, two days after the roof is done.' : 'You noticed there was no reinstall request and booked one anyway.' }); wait(s, 8); }
       else { L.push({ t: 'bad', x: 'The roof was done Oct 19. The next crew opening was Nov 4. The panels sat in the garage for over two weeks.' }); wait(s, 22); mood(s, -10); s.flags.lateReinstall = true; }
@@ -514,7 +514,7 @@
   {
     id: 'fall-field', season: 'fall', role: 'field',
     today: () => D(9, 13),
-    title: 'Two visits: panels off, then back on.',
+    title: 'Remove the panels, then reinstall them.',
     scene: () => ART + 'house-fall-roofwork.webp',
     start: { kind: 'order', label: 'Read the work orders', sub: () => 'Ray Brennan + helper · Oct 13 and Oct 21', opens: 'orders' },
     clues: [
@@ -546,7 +546,7 @@
       if (P(p, 'layout')) L.push({ t: 'good', x: 'Every panel went back exactly where it was.' });
       else { s.flags.fallLow = true; L.push({ t: 'bad', x: 'No layout photos. Two strings were wired back wrong. Output is 15% low.' }); }
       if (P(p, 'driveway')) { L.push({ t: 'bad', x: 'A roofing delivery truck clipped the stack. One panel cracked.' }); s.flags.cracked = true; mood(s, -5); }
-      if (P(p, 'mounts')) L.push({ t: 'good', x: 'You and the roofer agreed on mounting points. Fewer new holes.' });
+      if (P(p, 'mounts')) L.push({ t: 'good', x: 'You and the roofer agreed on mounting points. The roof needed fewer new holes.' });
       if (P(p, 'seal')) L.push({ t: 'good', x: 'Seals checked. The roof stayed dry in the November rain.' });
       else { s.flags.leak = true; L.push({ t: 'bad', x: 'A missed seal leaked in the first November rain.' }); mood(s, -15); text(s, 'There’s a water stain on the ceiling right under the panels.'); wait(s, 5); }
       if (P(p, 'test')) { L.push({ t: 'good', x: s.flags.fallLow ? 'The test caught the 15% drop. You fixed the wiring before leaving.' : 'Production is back to normal.' }); s.flags.fallLow = false; }
@@ -578,7 +578,7 @@
         if (s.flags.lowOutput) open.push('output below expected');
         if (s.flags.cracked) open.push('cracked panels (fall)');
         if (s.flags.lateFee) open.push('unpaid late fee (summer)');
-        return card('Dana Reyes · 18 Alder Lane', open.length ? ['<b>Open issues:</b>'].concat(open.map(o => '• ' + o)) : ['No open issues.']); } },
+        return card('Dana Rodriguez · 18 Alder Lane', open.length ? ['<b>Open issues:</b>'].concat(open.map(o => '• ' + o)) : ['No open issues.']); } },
       { id: 'title', label: 'Title company', icon: ICON + 'mail.webp', kind: 'optional', body: () =>
         card('Bayview Title', ['"We need lease transfer approval by <b>Tue, Jan 27</b> to close on time."']) }
     ],
@@ -605,10 +605,10 @@
       if (P(p, 'buyerapp')) L.push({ t: 'good', x: "Sam's application went in the same week." });
       if (openIssues && !P(p, 'issues')) { doneDay += 4; L.push({ t: 'bad', x: "The buyer's inspector flagged the open issues. Four days of back-and-forth." }); mood(s, -5); }
       if (openIssues && P(p, 'issues')) { L.push({ t: 'good', x: 'Open issues fixed before the buyer asked.' }); s.flags.leak = s.flags.lowOutput = s.flags.cracked = s.flags.lateFee = false; }
-      if (!openIssues && P(p, 'issues')) L.push({ t: 'info', x: 'The inspection found nothing. A day of a tech’s time.' });
+      if (!openIssues && P(p, 'issues')) L.push({ t: 'info', x: 'The inspection found nothing. It used a full day of a technician’s time.' });
       s.flags.transferOnTime = doneDay <= 21;
-      if (s.flags.transferOnTime) { L.push({ t: 'good', x: `Transfer approved on day ${doneDay}. Closing stays on track.` }); mood(s, 8); wait(s, doneDay); }
-      else { L.push({ t: 'bad', x: `Transfer approved on day ${doneDay}. The closing had to be pushed back.` }); mood(s, -20); wait(s, doneDay); text(s, 'Our closing got pushed because the solar transfer isn’t done. Please help.'); M.push('The transfer needed to start right away to beat the closing date.'); }
+      if (s.flags.transferOnTime) { L.push({ t: 'good', x: `Transfer approved on day ${doneDay}. The closing can happen on time.` }); mood(s, 8); wait(s, doneDay); }
+      else { L.push({ t: 'bad', x: `Transfer approved on day ${doneDay}. The closing had to be pushed back.` }); mood(s, -20); wait(s, doneDay); text(s, 'Our closing got pushed because the solar transfer isn’t done. Please help.'); M.push('The transfer needed to start right away to finish before the closing date.'); }
       s.flags.titleKnown = P(p, 'title');
       if (!s.flags.titleKnown) M.push('No closing date or title contact in the file. Billing will have to guess.');
       if (P(p, 'buyout')) L.push({ t: 'info', x: 'Dana said no thanks. Sam wants the solar.' });
@@ -618,7 +618,7 @@
   {
     id: 'winter-billing', season: 'winter', role: 'billing',
     today: () => D(0, 26),
-    title: 'The house is changing hands. Settle the accounts.',
+    title: 'The house is sold. Close Dana’s account and set up the buyer’s account.',
     scene: () => ART + 'house-winter-sold.webp',
     start: { kind: 'alert', label: 'Open the transfer approval', sub: () => 'Transfer approved · 18 Alder Lane', opens: 'transfer' },
     pressure: s => s.flags.transferOnTime ? 'Closing: Fri, Jan 30 · 4 days' : 'Closing pushed back',
@@ -649,7 +649,7 @@
     ],
     resolve(s, p) {
       const L = [], M = [];
-      if (P(p, 'final')) L.push({ t: 'good', x: s.flags.titleKnown ? "Dana's final bill ends Jan 30." : 'No closing date on file, so you guessed the end of the month. Close enough.' });
+      if (P(p, 'final')) L.push({ t: 'good', x: s.flags.titleKnown ? "Dana's final bill ends Jan 30." : 'No closing date was on file, so you used the end of the month.' });
       else M.push("Dana's account was never closed out.");
       s.flags.danaCharged = !P(p, 'stopauto');
       if (s.flags.danaCharged) { L.push({ t: 'bad', x: "Dana was charged for February on a house she doesn't own anymore." }); mood(s, -15); text(s, 'Why was I charged for February? We sold the house!'); }
@@ -666,9 +666,9 @@
   {
     id: 'winter-care', season: 'winter', role: 'care',
     today: () => D(1, 9),
-    title: 'One last call from Dana.',
+    title: 'Dana calls after the sale.',
     scene: () => ART + 'house-winter-sold.webp',
-    start: { kind: 'call', label: 'Answer the call', sub: () => 'Incoming call · Dana Reyes', opens: 'call' },
+    start: { kind: 'call', label: 'Answer the call', sub: () => 'Incoming call · Dana Rodriguez', opens: 'call' },
     call: {
       audio: s => s.flags.danaCharged ? 'assets/audio/winter_care_charged.mp3' : 'assets/audio/winter_care_calm.mp3',
       face: s => s.flags.danaCharged ? 'angry' : 'happy',
@@ -695,7 +695,7 @@
     ],
     decisions: [
       { id: 'winter.care.refund', label: 'Refunded the wrong charge', type: 'do', actions: ['refund'], clues: ['charges'], when: s => s.flags.danaCharged },
-      { id: 'winter.care.confirm', label: 'Confirmed Dana is wrapped up', type: 'do', actions: ['confirmfinal'], clues: ['notes', 'charges'] },
+      { id: 'winter.care.confirm', label: 'Confirmed Dana’s account is closed', type: 'do', actions: ['confirmfinal'], clues: ['notes', 'charges'] },
       { id: 'winter.care.welcome', label: 'Welcomed the new owner', type: 'do', actions: ['welcome'], clues: ['sam'] },
       { id: 'winter.care.transfer', label: 'Handled it without a transfer', type: 'avoid', actions: ['transfer'], clues: ['notes'] }
     ],
@@ -705,9 +705,9 @@
         if (P(p, 'refund')) { L.push({ t: 'good', x: 'February refunded and autopay turned off.' }); mood(s, 10); }
         else { M.push('The February charge was never refunded.'); mood(s, -10); }
       } else if (P(p, 'refund')) L.push({ t: 'info', x: 'There was nothing to refund.' });
-      if (P(p, 'confirmfinal')) { L.push({ t: 'good', x: "Dana knows she's all wrapped up." }); mood(s, 6); }
+      if (P(p, 'confirmfinal')) { L.push({ t: 'good', x: "Dana knows her account is closed." }); mood(s, 6); }
       if (P(p, 'welcome')) L.push({ t: 'good', x: "Sam is set up and can see his system's production." });
-      else M.push("Sam's voicemail went unanswered. A new customer starts out ignored.");
+      else M.push("Nobody returned Sam's call. He is a new customer.");
       if (P(p, 'lease')) L.push({ t: 'info', x: 'Sam was polite, but it was a 40-minute call.' });
       if (P(p, 'transfer')) { L.push({ t: 'bad', x: 'Dana explained everything again to Billing.' }); mood(s, -8); }
       if (P(p, 'survey')) L.push({ t: 'info', x: 'Surveys sent.' });

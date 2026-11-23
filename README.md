@@ -2,7 +2,7 @@
 
 **One homeowner. One year. Every team.**
 
-A learning game prototype for frontline onboarding at a residential solar asset management company. The player follows one homeowner, Dana Reyes, through a year of real-world problems and sits in each frontline seat as her case reaches it: Customer Care, Dispatch & Scheduling, Field Service, Billing & Collections and Account Services.
+A learning game prototype for frontline onboarding at a residential solar asset management company. The player follows one homeowner, Dana Rodriguez, through a year of real-world problems and sits in each frontline seat as her case reaches it: Customer Care, Dispatch & Scheduling, Field Service, Billing & Collections and Account Services.
 
 > **Soleil Systems is a fictional company.** Policies, fees and timelines in the game are assumptions based on general industry practice, not any real company's process.
 

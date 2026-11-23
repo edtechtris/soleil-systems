@@ -14,7 +14,7 @@
   const $ = (sel, root = app) => root.querySelector(sel);
   const $$ = (sel, root = app) => [...root.querySelectorAll(sel)];
   const shuffle = a => { const x = a.slice(); for (let i = x.length - 1; i > 0; i--) { const j = Math.random() * (i + 1) | 0; [x[i], x[j]] = [x[j], x[i]]; } return x; };
-  const FACE = f => `${C.ART}dana-${f}.webp`;
+  const FACE = f => `${C.ART}dana-${f === 'happy' ? 'neutral' : f}.webp`; // the happy portrait isn't used
   const moodFace = m => m >= 80 ? 'happy' : m >= 60 ? 'neutral' : m >= 45 ? 'meh' : m >= 30 ? 'impatient' : 'angry';
   const moodWord = m => m >= 80 ? 'Happy' : m >= 60 ? 'Okay' : m >= 45 ? 'Frustrated' : m >= 30 ? 'Fed up' : 'Upset';
 
@@ -85,10 +85,14 @@
     render(`
       <section class="screen welcome">
         <h2>Welcome to Soleil Systems</h2>
-        <p class="lead">We look after solar systems on homes: the repairs, the bills and the paperwork, for as long as the panels are on the roof.</p>
+        <p class="lead">Soleil Systems manages home solar systems. We handle repairs, payments and lease contracts for homeowners.</p>
         <div class="goal">
           <img src="${C.ICON}goal-objective.webp" alt="">
-          <p>Over the next year you'll sit in five different seats, one homeowner's case at a time. Your goal: get her through the year with as little waiting and worry as possible.</p>
+          <div>
+            <p>In this game, you work in each of our five frontline teams.</p>
+            <p>You handle one homeowner's account for one year.</p>
+            <p><b>Your goal:</b> solve her problems quickly and keep her informed.</p>
+          </div>
         </div>
         <button class="btn primary" id="next">Meet the teams</button>
       </section>`, { noSeason: true });
@@ -100,8 +104,8 @@
     const seen = new Set();
     render(`
       <section class="screen teams">
-        <h2>Meet the teams, one at a time</h2>
-        <p class="sub">Tap a team to see how it connects to Dana's home.</p>
+        <h2>Meet the five frontline teams</h2>
+        <p class="sub">Select each team to see what it does.</p>
         <div class="team-ring">
           <div class="team-house"><img src="${C.ART}house-spring-fixed.webp" alt="Dana's house"></div>
           ${ids.map((id, i) => `<button class="team-badge t${i}" data-id="${id}" style="--role:${C.ROLES[id].color}"><img src="${C.ROLES[id].icon}" alt=""><span>${C.ROLES[id].name}</span></button>`).join('')}
@@ -109,7 +113,7 @@
         </div>
         <div class="team-foot">
           <span class="pips">${ids.map(() => '<i></i>').join('')}</span>
-          <span id="count">0 of ${ids.length} teams explored</span>
+          <span id="count">Teams viewed: 0 of ${ids.length}</span>
           <button class="btn primary" id="next" disabled>Continue</button>
         </div>
       </section>`, { noSeason: true });
@@ -118,9 +122,9 @@
       $$('.team-badge').forEach(x => x.classList.toggle('on', x === b));
       b.classList.add('seen'); seen.add(id);
       const info = $('.team-info'); info.hidden = false; info.style.setProperty('--role', r.color);
-      info.innerHTML = `<h3>${r.name}</h3><p>${r.line}</p><p class="touch"><i>At Dana's house:</i> ${r.touches}.</p>`;
+      info.innerHTML = `<h3>${r.name}</h3><p>${r.line}</p>`;
       $$('.pips i').forEach((p, i) => p.classList.toggle('on', i < seen.size));
-      $('#count').textContent = `${seen.size} of ${ids.length} teams explored`;
+      $('#count').textContent = `Teams viewed: ${seen.size} of ${ids.length}`;
       $('#next').disabled = seen.size < ids.length;
       T.track('viewed', `intro/team/${id}`, r.name);
     });
@@ -130,13 +134,15 @@
   function meetDana() {
     render(`
       <section class="screen meet-dana">
-        <div class="ring big"><img src="${FACE('happy')}" alt="Dana Reyes"></div>
-        <div>
-          <h2>This is Dana Reyes</h2>
-          <p class="addr"><img src="${C.ICON}home.webp" alt=""> 18 Alder Lane · Customer since 2019</p>
-          <p>Dana leases the solar panels on her roof. Her lease came to Soleil Systems from the company that installed them.</p>
-          <p>She doesn't know our teams. When she calls, writes or waits, she's dealing with <b>Soleil Systems</b>.</p>
-          <p class="watch">Keep an eye on her panel: her mood, how many days she's been dealing with a problem, and her texts.</p>
+        <div class="ring big"><img src="${FACE('neutral')}" alt="Dana Rodriguez"></div>
+        <div class="dana-intro">
+          <p class="kicker">Your customer</p>
+          <h2>Dana Rodriguez</h2>
+          <p class="addr">18 Alder Lane</p>
+          <p class="addr">Customer since 2019</p>
+          <p>Dana leases her solar system. Her lease moved to Soleil Systems from the company that installed the system.</p>
+          <p>Dana does not know our teams. To her, every call and every email is from Soleil Systems.</p>
+          <p class="watch">During the game, Dana's panel shows her mood, how many days she has had a problem, and her texts to us.</p>
           <button class="btn primary" id="next">Start the year</button>
         </div>
       </section>`, { noSeason: true });
@@ -154,7 +160,7 @@
         <p class="kicker">${se.name}</p>
         <h2>${se.event}</h2>
         <div class="relay">${roles.map(r => `<span style="--role:${C.ROLES[r].color}"><img src="${C.ROLES[r].icon}" alt="">${C.ROLES[r].name}</span>`).join('<b>→</b>')}</div>
-        ${season === 'spring' ? '' : `<p class="sub">${season === 'summer' ? 'From now on, you’ll see what your choices caused at the end of the season.' : season === 'fall' ? 'No more tips. More to check, and more to choose.' : 'Leftovers from earlier in the year may show up now.'}</p>`}
+        ${season === 'spring' ? '' : `<p class="sub">${season === 'summer' ? 'From now on, you see the results of your choices at the end of each season.' : season === 'fall' ? 'There are no more tips. You have more information to check and more actions to choose from.' : 'Problems from earlier seasons can affect this season.'}</p>`}
         <button class="btn primary" id="go">Begin</button>
       </section>`, { season });
     sfx('season_change', 0.55);
@@ -173,6 +179,7 @@
     const seasonSteps = C.steps.filter(s => s.season === step.season);
     const pos = seasonSteps.indexOf(step);
     const pressure = step.pressure ? val(step.pressure, S) : '';
+    const lastInSeason = pos === seasonSteps.length - 1;
     const picked = new Set(), viewed = new Set(), revealed = [];
     const order = shuffle(step.actions);                    // mixed order, per play
     const started = Date.now(), moodBefore = S.mood;
@@ -199,11 +206,11 @@
           <aside class="dana-panel">
             <div class="who">
               <div class="ring"><img id="face" src="${FACE(moodFace(S.mood))}" alt="Dana"></div>
-              <div><h3>Dana Reyes</h3><p><img src="${C.ICON}home.webp" alt="">18 Alder Lane</p><p><img src="${C.ICON}solar-panels.webp" alt="">Customer since 2019</p></div>
+              <div><h3>Dana Rodriguez</h3><p><img src="${C.ICON}home.webp" alt="">18 Alder Lane</p><p><img src="${C.ICON}solar-panels.webp" alt="">Customer since 2019</p></div>
             </div>
             <div class="meters">
               <div class="mood"><span>Mood</span><div class="moodbar"><i style="width:${S.mood}%"></i></div><b>${moodWord(S.mood)}</b></div>
-              <div class="days"><span>Days dealing with it</span><b>${S.days[step.season] || 0}</b></div>
+              <div class="days"><span>Days with this problem</span><b>${S.days[step.season] || 0}</b></div>
             </div>
             <div class="phone">${phoneHtml()}</div>
           </aside>
@@ -218,10 +225,10 @@
           <div class="tray">
             <div class="tray-head">
               <h4>Actions</h4>
-              <span class="budget" title="How many actions you have time for">Time for ${step.pick} <span class="dots">${'<i></i>'.repeat(step.pick)}</span></span>
+              <span class="budget" title="How many actions you can choose">Choose ${step.pick} <span class="dots">${'<i></i>'.repeat(step.pick)}</span></span>
             </div>
-            <div class="actions"><p class="empty">Actions appear as you open clues.</p></div>
-            <button class="btn primary pass" disabled>Pass it on</button>
+            <div class="actions"><p class="empty">Actions appear when you open the information on the left.</p></div>
+            <button class="btn primary pass" disabled>${lastInSeason ? 'Finish the season' : 'Send to the next team'}</button>
           </div>
         </div>
       </section>`, { season: step.season });
@@ -233,7 +240,7 @@
     const kindIcon = { call: 'answer-call', ticket: 'work-order', order: 'work-order', alert: 'issue-alert', email: 'mail' }[st.kind];
     $('.start').innerHTML = `<button class="start-item ${st.kind}"><img src="${C.ICON}${kindIcon}.webp" alt=""><span><b>${esc(st.label)}</b><small>${esc(val(st.sub, S))}</small></span></button>`;
     if (st.kind === 'call') ring(true);
-    prompt(firstGame, 'start', $('.start'), 'Start here.');
+    prompt(firstGame, 'start', $('.start'), 'Select this to start.');
     $('.start-item').onclick = () => {
       ring(false);
       startOpened = true;
@@ -251,14 +258,14 @@
       const list = step.clues.filter(c => c.kind !== 'start');
       $('.clues').innerHTML = list.map(c => `
         <button class="clue new ${c.kind}" data-id="${c.id}">
-          <img src="${c.icon}" alt=""><span>${esc(c.label)}</span>${c.kind === 'optional' ? '<em>extra</em>' : ''}<i class="newtag">NEW</i>
+          <img src="${c.icon}" alt=""><span>${esc(c.label)}</span>${c.kind === 'optional' ? '<em>optional</em>' : ''}<i class="newtag">NEW</i>
         </button>`).join('');
       $$('.clue').forEach(b => b.onclick = () => openClue(b.dataset.id));
       // hotspots on the house (only where the player can see the house: field visits)
       $('.hotspots').innerHTML = step.clues.filter(c => c.hotspot).map(c =>
         `<button class="hotspot" data-id="${c.id}" style="left:${c.hotspot.x}%;top:${c.hotspot.y}%" aria-label="${esc(c.label)}"><i></i></button>`).join('');
       $$('.hotspot').forEach(b => b.onclick = () => openClue(b.dataset.id));
-      prompt(firstGame, 'clues', $('.clues'), 'New clues and actions appear as you open things.');
+      prompt(firstGame, 'clues', $('.clues'), 'Open each item to see more information. Some items add new actions.');
     }
 
     function openClue(id) {
@@ -273,7 +280,7 @@
       if (st.kind === 'call' && id === st.opens) {
         v.innerHTML = `<div class="paper call-view">
           <button class="x" aria-label="Close">×</button>
-          <div class="callhead"><div class="ring sm"><img src="${FACE(callFace)}" alt=""></div><div><b>Dana Reyes</b><small>On the line</small></div></div>
+          <div class="callhead"><div class="ring sm"><img src="${FACE(callFace)}" alt=""></div><div><b>Dana Rodriguez</b><small>On the call</small></div></div>
           <div class="wave"><button class="play" aria-label="Replay">▶</button><span class="bars">${'<i></i>'.repeat(28)}</span></div>
           <p class="quote">“${esc(val(step.call.text, S))}”</p>
         </div>`;
@@ -311,7 +318,7 @@
       if (!fresh.length) return;
       revealed.push(...fresh);
       drawActions(fresh.map(a => a.id));
-      prompt(firstGame, 'actions', $('.tray-head'), `You have time for ${step.pick}. Pick what matters most.`);
+      prompt(firstGame, 'actions', $('.tray-head'), `You can choose ${step.pick} actions. Choose the most important ones.`);
     }
 
     function drawActions(newIds = []) {
@@ -337,7 +344,7 @@
         T.track('selected', `step/${step.id}/action/${id}`, val(a.label, S), null, { order: picked.size, position, revealedFrom: a.from, cluesViewed: [...viewed] });
       }
       drawActions();
-      if (picked.size >= step.pick) prompt(firstGame, 'pass', $('.pass'), 'When you’re ready, pass it on.');
+      if (picked.size >= step.pick) prompt(firstGame, 'pass', $('.pass'), 'When you are done, select this button.');
     }
 
     /* --- tips --- */
@@ -348,7 +355,7 @@
       T.track('viewed', `step/${step.id}/tip`, 'Teammate tip', null, { asked: !!asked, msIntoStep: Date.now() - started });
     }
     function offerTip() {
-      $('.tipslot').innerHTML = `<button class="ask">Stuck? Ask a teammate</button>`;
+      $('.tipslot').innerHTML = `<button class="ask">Need help? Get a tip</button>`;
       $('.ask').onclick = () => showTip(true);
     }
 
@@ -432,10 +439,11 @@
   function handoff(from, to, done) {
     const a = C.ROLES[from], b = C.ROLES[to];
     const pop = h(`<div class="overlay"><div class="handoff">
-      <p class="kicker">Passing Dana's case</p>
+      <p class="kicker">Next team</p>
       <div class="hand"><span style="--role:${a.color}"><img src="${a.icon}" alt="">${a.name}</span><b class="arrow">→</b><span style="--role:${b.color}"><img src="${b.icon}" alt="">${b.name}</span></div>
-      <p>You're now in <b>${b.name}</b>. What you passed on is what you'll start with.</p>
-      <button class="btn primary">Take your seat</button></div></div>`).firstElementChild;
+      <p>You now work in <b>${b.name}</b>.</p>
+      <p>You start with the information the last team recorded.</p>
+      <button class="btn primary">Continue</button></div></div>`).firstElementChild;
     app.appendChild(pop);
     sfx('pass_it_on', 0.55);
     pop.querySelector('button').onclick = () => { pop.remove(); done(); };
@@ -453,7 +461,7 @@
         <div class="chain-step" style="--role:${role.color}">
           <div class="chain-badge"><img src="${role.icon}" alt=""><span>${role.name}</span><small>${r.today}</small></div>
           <div class="chain-body">
-            <p class="did"><b>You:</b> ${r.pickedLabels.map(esc).join(' · ') || 'nothing'}</p>
+            <p class="did"><b>You chose:</b> ${r.pickedLabels.map(esc).join(' · ') || 'nothing'}</p>
             <ul>${lines}${missed}</ul>
           </div>
         </div>`;
@@ -466,14 +474,14 @@
     render(`
       <section class="screen replay">
         <div class="replay-head">
-          <div><p class="kicker">${C.SEASONS[season].name} replay</p><h2>How Dana's case traveled</h2></div>
+          <div><p class="kicker">${C.SEASONS[season].name} results</p><h2>What each team did, and what happened</h2></div>
           <div class="replay-dana">
             <div class="ring sm"><img src="${FACE(moodFace(S.mood))}" alt=""></div>
-            <div><b>${moodWord(S.mood)}</b><small>${days} days dealing with it</small>${texts.length ? `<small>${texts.length} text${texts.length > 1 ? 's' : ''} asking what was going on</small>` : ''}</div>
+            <div><b>${moodWord(S.mood)}</b><small>${days} days with the problem</small>${texts.length ? `<small>${texts.length} text${texts.length > 1 ? 's' : ''} asking for an update</small>` : ''}</div>
           </div>
         </div>
         <div class="chain">${rows}</div>
-        <button class="btn primary" id="next">${last ? 'See Dana’s year' : 'On to ' + C.SEASONS[nextS].name}</button>
+        <button class="btn primary" id="next">${last ? 'See the year results' : 'Start ' + C.SEASONS[nextS].name.toLowerCase()}</button>
       </section>`, { season });
     $('#next').onclick = () => last ? yearEnd() : seasonCard(nextS);
   }
@@ -491,23 +499,23 @@
         <div class="ring sm"><img src="${FACE(moodFace(S.seasonMood[s] ?? S.mood))}" alt=""></div>
         <small>${S.days[s] || 0} days</small>
       </div>`).join('');
-    const label = { caught: 'Caught it', guessed: 'Right, without checking', missed: 'Missed', avoided: 'Avoided', fell_for: 'Fell for it' };
+    const label = { caught: 'Correct', guessed: 'Correct, but did not check', missed: 'Missed', avoided: 'Correctly avoided', fell_for: 'Wrong choice' };
     const rows = all.map(d => `<li class="o-${d.outcome}"><span>${esc(d.label)}</span><em>${label[d.outcome]}</em></li>`).join('');
     render(`
       <section class="screen year-end">
-        <h2>Dana's year with Soleil Systems</h2>
+        <h2>Year results</h2>
         <div class="ye-strip">${seasons}</div>
         <div class="ye-points">
-          <p>Dana never saw Care, Dispatch, Field, Billing or Account Services. She saw <b>Soleil Systems</b>.</p>
-          <p>Every seat you sat in started with what the last one passed on.</p>
-          ${S.messages.length ? `<p>Dana texted ${S.messages.length} time${S.messages.length > 1 ? 's' : ''} because nobody had told her what was going on.</p>` : '<p>Dana never had to chase anyone for an update.</p>'}
+          <p>Dana did not see five teams. She saw one company: <b>Soleil Systems</b>.</p>
+          <p>Each team started with the information the team before it recorded.</p>
+          ${S.messages.length ? `<p>Dana texted ${S.messages.length} time${S.messages.length > 1 ? 's' : ''} to ask for an update.</p>` : '<p>Dana never had to ask for an update.</p>'}
         </div>
         <div class="ye-cols">
           <div class="ye-stats">
-            <div><b>${count('caught') + count('avoided')}</b><span>good calls</span></div>
-            <div><b>${count('guessed')}</b><span>right, without checking</span></div>
-            <div><b>${count('missed') + count('fell_for')}</b><span>missed or fell for</span></div>
-            <div><b>${totalDays}</b><span>days Dana spent dealing with problems</span></div>
+            <div><b>${count('caught') + count('avoided')}</b><span>correct choices</span></div>
+            <div><b>${count('guessed')}</b><span>correct, but you did not check the information first</span></div>
+            <div><b>${count('missed') + count('fell_for')}</b><span>missed or wrong choices</span></div>
+            <div><b>${totalDays}</b><span>days Dana had problems</span></div>
           </div>
           <ul class="ye-list">${rows}</ul>
         </div>

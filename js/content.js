@@ -76,9 +76,9 @@
     daysAtStart: 3, // the system stopped on Friday
     title: 'Dana is calling. Her app shows zero.',
     scene: () => ART + 'house-spring-fault.webp',
-    start: { kind: 'call', label: 'Answer the call', sub: () => 'Incoming call · Dana Rodriguez', opens: 'call' },
+    start: { kind: 'call', label: 'Answer the call', sub: () => 'Incoming call · Dana Reyes', opens: 'call' },
     call: { audio: () => 'assets/audio/spring_care_call.mp3', face: () => 'neutral',
-      text: () => "Hi, this is Dana Rodriguez on Alder Lane. My solar app has said zero since Friday. I already closed and reopened the app. Oh, and the little box on the side of the garage has a red light blinking, if that matters. Can someone come take a look?" },
+      text: () => "Hi, this is Dana Reyes on Alder Lane. My solar app has said zero since Friday. I already closed and reopened the app. Oh, and the little box on the side of the garage has a red light blinking, if that matters. Can someone come take a look?" },
     clues: [
       { id: 'call', label: "Dana's call", icon: ICON + 'answer-call.webp', kind: 'start' },
       { id: 'monitoring', label: 'Monitoring', icon: ICON + 'monitoring.webp', kind: 'optional', body: () =>
@@ -244,7 +244,7 @@
     today: s => nextMonday(s.flags.fixDate),
     title: 'Dana is calling back.',
     scene: s => s.flags.partial ? ART + 'house-spring-fixed.webp' : ART + 'house-spring-fixed.webp',
-    start: { kind: 'call', label: 'Answer the call', sub: () => 'Incoming call · Dana Rodriguez', opens: 'call' },
+    start: { kind: 'call', label: 'Answer the call', sub: () => 'Incoming call · Dana Reyes', opens: 'call' },
     call: {
       calm: s => s.days.spring <= 7 && s.mood >= 55,
       audio: s => s.days.spring <= 7 && s.mood >= 55 ? 'assets/audio/spring_followup_calm.mp3' : 'assets/audio/spring_followup_upset.mp3',
@@ -308,7 +308,7 @@
       { id: 'alert', label: 'Payment alert', icon: ICON + 'issue-alert.webp', kind: 'start', body: () =>
         card('Autopay failed · Jul 1', ['<b>Reason:</b> card ending 0623 expired (06/25).', '<b>History:</b> autopay paid on time every month since 2019.', '<b>Automatic email:</b> "Your payment failed" sent Jul 2.']) },
       { id: 'history', label: 'Account history', icon: ICON + 'details-logs.webp', kind: 'key', body: s =>
-        card('Dana Rodriguez · since 2019', [
+        card('Dana Reyes · since 2019', [
           `<b>Spring:</b> system down ${s.days.spring} days. ${s.flags.lowOutput ? 'Output still low.' : 'Fixed.'}`,
           '<b>Best contact:</b> ' + (s.flags.confirm ? 'phone, home Tue and Thu.' : 'not recorded.')
         ]) },
@@ -352,7 +352,7 @@
     today: () => D(6, 10),
     title: 'Dana is calling about a billing email.',
     scene: () => ART + 'house-summer.webp',
-    start: { kind: 'call', label: 'Answer the call', sub: () => 'Incoming call · Dana Rodriguez', opens: 'call' },
+    start: { kind: 'call', label: 'Answer the call', sub: () => 'Incoming call · Dana Reyes', opens: 'call' },
     call: {
       audio: s => s.flags.autopayFixed ? 'assets/audio/summer_care_calm.mp3' : 'assets/audio/summer_care_upset.mp3',
       face: s => s.flags.autopayFixed ? 'confused' : 'angry',
@@ -413,7 +413,7 @@
     today: () => D(8, 29),
     title: 'Dana is getting a new roof.',
     scene: () => ART + 'house-fall.webp',
-    start: { kind: 'call', label: 'Answer the call', sub: () => 'Incoming call · Dana Rodriguez', opens: 'call' },
+    start: { kind: 'call', label: 'Answer the call', sub: () => 'Incoming call · Dana Reyes', opens: 'call' },
     call: {
       audio: s => s.mood >= 50 ? 'assets/audio/fall_care_calm.mp3' : 'assets/audio/fall_care_wary.mp3',
       face: s => s.mood >= 50 ? 'happy' : 'meh',
@@ -578,7 +578,7 @@
         if (s.flags.lowOutput) open.push('output below expected');
         if (s.flags.cracked) open.push('cracked panels (fall)');
         if (s.flags.lateFee) open.push('unpaid late fee (summer)');
-        return card('Dana Rodriguez · 18 Alder Lane', open.length ? ['<b>Open issues:</b>'].concat(open.map(o => '• ' + o)) : ['No open issues.']); } },
+        return card('Dana Reyes · 18 Alder Lane', open.length ? ['<b>Open issues:</b>'].concat(open.map(o => '• ' + o)) : ['No open issues.']); } },
       { id: 'title', label: 'Title company', icon: ICON + 'mail.webp', kind: 'optional', body: () =>
         card('Bayview Title', ['"We need lease transfer approval by <b>Tue, Jan 27</b> to close on time."']) }
     ],
@@ -668,7 +668,7 @@
     today: () => D(1, 9),
     title: 'Dana calls after the sale.',
     scene: () => ART + 'house-winter-sold.webp',
-    start: { kind: 'call', label: 'Answer the call', sub: () => 'Incoming call · Dana Rodriguez', opens: 'call' },
+    start: { kind: 'call', label: 'Answer the call', sub: () => 'Incoming call · Dana Reyes', opens: 'call' },
     call: {
       audio: s => s.flags.danaCharged ? 'assets/audio/winter_care_charged.mp3' : 'assets/audio/winter_care_calm.mp3',
       face: s => s.flags.danaCharged ? 'angry' : 'happy',

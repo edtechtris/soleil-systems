@@ -134,10 +134,10 @@
   function meetDana() {
     render(`
       <section class="screen meet-dana">
-        <div class="ring big"><img src="${FACE('neutral')}" alt="Dana Rodriguez"></div>
+        <div class="ring big"><img src="${FACE('neutral')}" alt="Dana Reyes"></div>
         <div class="dana-intro">
           <p class="kicker">Your customer</p>
-          <h2>Dana Rodriguez</h2>
+          <h2>Dana Reyes</h2>
           <p class="addr">18 Alder Lane</p>
           <p class="addr">Customer since 2019</p>
           <p>Dana leases her solar system. Her lease moved to Soleil Systems from the company that installed the system.</p>
@@ -206,7 +206,7 @@
           <aside class="dana-panel">
             <div class="who">
               <div class="ring"><img id="face" src="${FACE(moodFace(S.mood))}" alt="Dana"></div>
-              <div><h3>Dana Rodriguez</h3><p><img src="${C.ICON}home.webp" alt="">18 Alder Lane</p><p><img src="${C.ICON}solar-panels.webp" alt="">Customer since 2019</p></div>
+              <div><h3>Dana Reyes</h3><p><img src="${C.ICON}home.webp" alt="">18 Alder Lane</p><p><img src="${C.ICON}solar-panels.webp" alt="">Customer since 2019</p></div>
             </div>
             <div class="meters">
               <div class="mood"><span>Mood</span><div class="moodbar"><i style="width:${S.mood}%"></i></div><b>${moodWord(S.mood)}</b></div>
@@ -280,7 +280,7 @@
       if (st.kind === 'call' && id === st.opens) {
         v.innerHTML = `<div class="paper call-view">
           <button class="x" aria-label="Close">×</button>
-          <div class="callhead"><div class="ring sm"><img src="${FACE(callFace)}" alt=""></div><div><b>Dana Rodriguez</b><small>On the call</small></div></div>
+          <div class="callhead"><div class="ring sm"><img src="${FACE(callFace)}" alt=""></div><div><b>Dana Reyes</b><small>On the call</small></div></div>
           <div class="wave"><button class="play" aria-label="Replay">▶</button><span class="bars">${'<i></i>'.repeat(28)}</span></div>
           <p class="quote">“${esc(val(step.call.text, S))}”</p>
         </div>`;

@@ -7,6 +7,7 @@ window.BP_CONFIG = {
   activityBase: 'https://edtechtris.github.io/soleil-systems', // any stable URL you own; used as xAPI activity IDs
   lrs: {
     endpoint: 'https://soleil.lrs.io/xapi/', // Veracity Learning LRS
-    auth: ''      // 'Basic ' + btoa('<key name>:<secret>') of a WRITE-ONLY key. Empty = nothing is sent.
+    // Key "Soleil321": WRITE-ONLY (it can send records but not read or delete them). Anything here is public.
+    auth: 'Basic ' + btoa('d142d940-8e3d-4eb2-86b4-0e190a7b9da1:dcad1510-d7f5-4498-a732-2ae6d1e0a712')
   }
 };

@@ -64,7 +64,7 @@
   </form>
   <div id="out"><p class="empty" style="margin-top:20px">Load data to see results.</p></div>
 </main>
-<script src="js/config.js?v=0.3.0"></script>
+<script src="js/config.js?v=0.3.1"></script>
 <script>
 (function () {
   const STORE = 'bp_sessions_v1';
@@ -160,7 +160,8 @@
         if (verb === 'completed' && id.startsWith('season/')) { const sea = id.split('/')[1]; (seasonEnd[sea] = seasonEnd[sea] || []).push({ mood: ext(st, 'mood'), days: ext(st, 'days'), texts: ext(st, 'texts') }); }
       });
     });
-    document.getElementById('status').textContent = `${played.length} ${played.length === 1 ? 'game' : 'games'} from ${source}.`;
+    const nRec = sessions.reduce((a, x) => a + (x.statements || []).length, 0);
+    document.getElementById('status').textContent = `From ${source}: ${nRec} ${nRec === 1 ? 'record' : 'records'}, ${sessions.length} ${sessions.length === 1 ? 'game' : 'games'} started, ${played.length} with at least one answered step, ${finished.length} finished. A game appears in the results once a step is answered.`;
     document.getElementById('csv').disabled = !rows.length;
     const out = document.getElementById('out');
     if (!rows.length) { out.innerHTML = '<p class="empty" style="margin-top:20px">No gameplay data yet.</p>'; return; }

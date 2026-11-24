@@ -1,0 +1,253 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Starting with Soleil · Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Bitter:wght@600;700&family=Nunito+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root { --ink:#1F2430; --muted:#5B6272; --line:#E6DFD0; --teal:#1F5E5B; --gold:#B8862B; --red:#B23A26; --track:#EFE8DA; --card:#fff; }
+  * { box-sizing: border-box; }
+  body { font-family: 'Nunito Sans', system-ui, sans-serif; color: var(--ink); background: #FBF4E4; margin: 0; }
+  main { max-width: 1040px; margin: 0 auto; padding: 24px 20px 60px; }
+  h1, h2 { font-family: Bitter, Georgia, serif; line-height: 1.15; margin: 0; }
+  h1 { font-size: 30px; }
+  h2 { font-size: 20px; margin-bottom: 4px; }
+  .top { display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; flex-wrap: wrap; margin: 8px 0 16px; }
+  .controls { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  button, select { font: inherit; font-weight: 600; border: 2px solid var(--ink); background: #fff; border-radius: 999px; padding: 7px 16px; cursor: pointer; color: var(--ink); }
+  .note { font-size: 13px; color: var(--muted); }
+  .sub { font-size: 14px; color: var(--muted); margin: 0 0 12px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 18px; margin-top: 16px; }
+  .kpis { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 12px; }
+  .kpi { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; }
+  .kpi b { font-family: Bitter, serif; font-size: 32px; display: block; font-variant-numeric: tabular-nums; }
+  .kpi span { font-size: 13px; color: var(--muted); }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .grid2 .card { margin-top: 16px; }
+  .row { display: grid; grid-template-columns: minmax(0, 1fr) 180px 64px; gap: 12px; align-items: center; padding: 10px 0; border-top: 1px solid var(--line); }
+  .row:first-of-type { border-top: 0; }
+  .row .label { font-size: 14px; }
+  .row .label small { display: block; color: var(--muted); font-size: 12px; margin-top: 2px; }
+  .row .val { text-align: right; font-weight: 700; font-variant-numeric: tabular-nums; font-size: 15px; }
+  .bar { height: 10px; background: var(--track); border-radius: 4px; position: relative; }
+  .bar span { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 4px; background: var(--teal); }
+  .bar.red span { background: var(--red); }
+  .objnum { display: inline-block; min-width: 22px; height: 22px; line-height: 22px; text-align: center; border-radius: 6px; background: var(--teal); color: #fff; font-size: 12px; font-weight: 700; margin-right: 6px; }
+  .funnel .row { grid-template-columns: 90px minmax(0,1fr) 90px; }
+  .feed { list-style: none; margin: 0; padding: 0; }
+  .feed li { display: flex; justify-content: space-between; gap: 12px; padding: 8px 0; border-top: 1px solid var(--line); font-size: 14px; }
+  .feed li:first-child { border-top: 0; }
+  .feed .when { color: var(--muted); font-size: 12px; white-space: nowrap; }
+  .tag { font-size: 12px; font-weight: 700; }
+  .tag.ok { color: var(--teal); } .tag.bad { color: var(--red); }
+  .empty { color: var(--muted); font-style: italic; font-size: 14px; }
+  .warn { background: #FFF6DD; border: 1px solid #EBD9A6; border-radius: 10px; padding: 10px 12px; font-size: 13px; margin-top: 12px; }
+  form.key { display: grid; gap: 10px; max-width: 460px; }
+  form.key label { display: grid; gap: 4px; font-size: 14px; }
+  form.key input[type=url], form.key input[type=text], form.key input[type=password] { padding: 8px; border: 1px solid #ccc; border-radius: 8px; font: inherit; }
+  form.key label.check { display: flex; gap: 8px; align-items: center; }
+  [hidden] { display: none !important; }
+  @media (max-width: 760px) {
+    .kpis { grid-template-columns: 1fr 1fr; }
+    .grid2 { grid-template-columns: 1fr; }
+    .row { grid-template-columns: minmax(0,1fr) 56px; }
+    .row .bar { grid-column: 1 / -1; grid-row: 2; }
+    .funnel .row { grid-template-columns: 80px minmax(0,1fr) 70px; }
+    .funnel .row .bar { grid-column: auto; grid-row: auto; }
+  }
+</style>
+</head>
+<body>
+<main>
+  <p class="note"><a href="index.html">Game</a> · <a href="report.html">Detailed report</a></p>
+  <div class="top">
+    <div>
+      <h1>Starting with Soleil · Dashboard</h1>
+      <p class="note" id="updated">Not loaded yet.</p>
+    </div>
+    <div class="controls">
+      <select id="cohort" aria-label="Cohort"><option value="">All cohorts</option></select>
+      <button id="refresh">Refresh</button>
+      <button id="keybtn">LRS key</button>
+    </div>
+  </div>
+
+  <form id="keyform" class="card key" hidden>
+    <p class="note">Use your key with <b>Read</b> permission. It stays in this browser and is only sent to your LRS.</p>
+    <label>LRS endpoint <input id="endpoint" type="url" required></label>
+    <label>Key name (username) <input id="user" type="text" autocomplete="off" required></label>
+    <label>Secret (password) <input id="pass" type="password" autocomplete="off" required></label>
+    <label class="check"><input id="remember" type="checkbox" checked> Remember on this device</label>
+    <button type="submit">Load</button>
+  </form>
+
+  <div id="out"></div>
+</main>
+<script src="js/config.js?v=0.3.1"></script>
+<script>
+(function () {
+  const CFG = window.BP_CONFIG || {};
+  const KEYSTORE = 'soleil_report_lrs'; // shared with report.html
+  const OBJ = { 1: 'My role is one piece of a bigger operation.', 2: 'Good service only happens when all the pieces connect.', 3: 'The customer only sees Soleil Systems, not our teams.', 4: 'Silence feels like being ignored.', 5: 'Problem-solving skills are critical to both the customer experience and the success of our teams.' };
+  const SEASONS = ['spring', 'summer', 'fall', 'winter'];
+  const $ = s => document.querySelector(s);
+  const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
+  const verbOf = st => st.verb.id.split('/').pop();
+  const tail = id => { const m = id.match(/\/((?:step|decision|season|objective|intro)\/.*|game)$/); return m ? m[1] : id; };
+  const ext = (st, key) => { const e = (st.context && st.context.extensions) || {}; const k = Object.keys(e).find(x => x.endsWith('/ext/' + key)); return k ? e[k] : undefined; };
+  const nameOf = st => (st.object.definition && st.object.definition.name && st.object.definition.name['en-US']) || tail(st.object.id);
+  const pct = (a, b) => b ? Math.round(100 * a / b) : 0;
+  const cap = s => s ? s[0].toUpperCase() + s.slice(1) : '';
+
+  let statements = [];
+
+  function getKey() { try { return JSON.parse(localStorage.getItem(KEYSTORE)) || null; } catch (e) { return null; } }
+  function showForm() {
+    const k = getKey() || {};
+    $('#endpoint').value = k.endpoint || (CFG.lrs && CFG.lrs.endpoint) || '';
+    $('#user').value = k.user || ''; $('#pass').value = k.pass || '';
+    $('#keyform').hidden = false;
+  }
+  let sessionKey = null; // used when "remember" is off
+  $('#keyform').onsubmit = e => {
+    e.preventDefault();
+    const k = { endpoint: $('#endpoint').value.replace(/\/?$/, '/'), user: $('#user').value.trim(), pass: $('#pass').value.trim() };
+    if ($('#remember').checked) { try { localStorage.setItem(KEYSTORE, JSON.stringify(k)); } catch (err) {} sessionKey = null; }
+    else { try { localStorage.removeItem(KEYSTORE); } catch (err) {} sessionKey = k; }
+    $('#keyform').hidden = true; load();
+  };
+  $('#keybtn').onclick = () => $('#keyform').hidden ? showForm() : ($('#keyform').hidden = true);
+  $('#refresh').onclick = () => load();
+  $('#cohort').onchange = () => render();
+
+  async function load() {
+    const k = sessionKey || getKey();
+    if (!k || !k.user) { showForm(); $('#updated').textContent = 'Enter your read key to load the data.'; return; }
+    $('#updated').textContent = 'Loading…';
+    const headers = { 'X-Experience-API-Version': '1.0.3', Authorization: 'Basic ' + btoa(k.user + ':' + k.pass) };
+    const base = (CFG.activityBase || '').replace(/\/$/, '');
+    let url = k.endpoint + 'statements?limit=500&activity=' + encodeURIComponent(base + '/game') + '&related_activities=true';
+    const got = [];
+    try {
+      while (url) {
+        const res = await fetch(url, { headers });
+        if (res.status === 401 || res.status === 403) throw new Error('The LRS refused the key. Check the name, the secret, and that the key has Read permission.');
+        if (!res.ok) throw new Error('The LRS answered ' + res.status + '.');
+        const data = await res.json();
+        got.push(...(data.statements || []));
+        url = data.more ? new URL(data.more, k.endpoint).href : '';
+      }
+    } catch (err) { $('#updated').textContent = err.message || 'Could not reach the LRS.'; return; }
+    statements = got;
+    const cohorts = [...new Set(got.map(st => ext(st, 'cohort')).filter(Boolean))].sort();
+    const sel = $('#cohort'), cur = sel.value;
+    sel.innerHTML = '<option value="">All cohorts</option>' + cohorts.map(c => `<option${c === cur ? ' selected' : ''}>${esc(c)}</option>`).join('');
+    $('#updated').textContent = 'Updated ' + new Date().toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' }) + '.';
+    render();
+  }
+
+  function render() {
+    const cohort = $('#cohort').value;
+    const games = {};
+    statements.forEach(st => {
+      const reg = st.context && st.context.registration; if (!reg) return;
+      const c = ext(st, 'cohort') || '';
+      if (cohort && c !== cohort) return;
+      (games[reg] = games[reg] || { id: reg, player: st.actor.name || 'Player', cohort: c, sts: [] }).sts.push(st);
+    });
+    const list = Object.values(games);
+    list.forEach(g => g.sts.sort((a, b) => a.timestamp < b.timestamp ? -1 : 1));
+    const out = $('#out');
+    if (!list.length) { out.innerHTML = '<div class="card"><p class="empty">No games yet' + (cohort ? ' for this cohort' : '') + '.</p></div>'; return; }
+
+    // per game facts
+    const decisions = [];
+    list.forEach(g => {
+      g.reached = -1; g.finished = false; g.answered = 0;
+      g.sts.forEach(st => {
+        const v = verbOf(st), id = tail(st.object.id);
+        if (v === 'experienced' && id.startsWith('step/')) g.reached = Math.max(g.reached, SEASONS.indexOf(id.split('/')[1].split('-')[0]));
+        if (v === 'answered') g.answered++;
+        if (v === 'completed' && id === 'game') { g.finished = true; g.score = st.result && st.result.score && st.result.score.scaled; }
+        if ((v === 'passed' || v === 'failed') && id.startsWith('decision/')) decisions.push({ game: g.id, id: id.slice(9), label: nameOf(st), ok: v === 'passed', type: ext(st, 'decisionType'), outcome: ext(st, 'outcome'), objective: +ext(st, 'objective'), season: ext(st, 'season'), team: ext(st, 'team') });
+      });
+    });
+    const played = list.filter(g => g.answered > 0);
+    const finished = list.filter(g => g.finished);
+    const right = decisions.filter(d => d.ok);
+    const checked = right.filter(d => d.outcome === 'caught' || d.outcome === 'avoided');
+
+    let h = `<div class="kpis">
+      <div class="kpi"><b>${list.length}</b><span>games started</span></div>
+      <div class="kpi"><b>${played.length}</b><span>answered at least one step</span></div>
+      <div class="kpi"><b>${pct(finished.length, list.length)}%</b><span>finished the year (${finished.length})</span></div>
+      <div class="kpi"><b>${decisions.length ? pct(right.length, decisions.length) + '%' : '–'}</b><span>choices right, all objectives</span></div>
+    </div>`;
+    if (played.length < 10) h += `<p class="warn">Based on ${played.length} ${played.length === 1 ? 'game' : 'games'} with answers. With this few, the percentages can change a lot from one player to the next.</p>`;
+
+    // objectives
+    h += `<div class="card"><h2>Learning objectives</h2><p class="sub">Percent of each objective's choices that players got right. "Checked first" is how many of those right choices came after opening the information that pointed to them.</p>`;
+    Object.keys(OBJ).forEach(n => {
+      const ds = decisions.filter(d => d.objective === +n), ok = ds.filter(d => d.ok), chk = ok.filter(d => d.outcome === 'caught' || d.outcome === 'avoided');
+      const p = pct(ok.length, ds.length);
+      h += `<div class="row" title="${ok.length} of ${ds.length} choices right; ${chk.length} after checking">
+        <div class="label"><span class="objnum">${n}</span>${esc(OBJ[n])}<small>${ds.length ? `${ok.length} of ${ds.length} right · ${pct(chk.length, ok.length)}% checked first` : 'No choices scored yet'}</small></div>
+        <div class="bar"><span style="width:${p}%"></span></div>
+        <div class="val">${ds.length ? p + '%' : '–'}</div></div>`;
+    });
+    h += `</div>`;
+
+    // where players stop + gaps
+    h += `<div class="grid2"><div class="card funnel"><h2>How far players get</h2><p class="sub">Games that reached each season.</p>`;
+    const stages = SEASONS.map((s, i) => [cap(s), list.filter(g => g.reached >= i).length]).concat([['Finished', finished.length]]);
+    stages.forEach(([name, n]) => { h += `<div class="row" title="${n} of ${list.length} games"><div class="label">${name}</div><div class="bar"><span style="width:${pct(n, list.length)}%"></span></div><div class="val">${n} <span class="note">(${pct(n, list.length)}%)</span></div></div>`; });
+    h += `</div>`;
+
+    const byChoice = {};
+    decisions.forEach(d => { const c = byChoice[d.id] = byChoice[d.id] || { label: d.label, type: d.type, objective: d.objective, season: d.season, team: d.team, n: 0, wrong: 0 }; c.n++; if (!d.ok) c.wrong++; });
+    const gaps = Object.values(byChoice).filter(c => c.wrong).sort((a, b) => (b.wrong / b.n) - (a.wrong / a.n) || b.n - a.n).slice(0, 6);
+    h += `<div class="card"><h2>Biggest gaps</h2><p class="sub">The choices players get wrong most often.</p>`;
+    if (!gaps.length) h += `<p class="empty">No wrong choices yet.</p>`;
+    gaps.forEach(c => {
+      const p = pct(c.wrong, c.n);
+      h += `<div class="row" title="${c.wrong} of ${c.n} games got this wrong"><div class="label">${c.type === 'avoid' ? 'Chose: ' : 'Missed: '}${esc(c.label)}<small>${cap(c.season)} · ${esc(c.team)} · Objective ${c.objective}</small></div><div class="bar red"><span style="width:${p}%"></span></div><div class="val">${p}%</div></div>`;
+    });
+    h += `</div></div>`;
+
+    // Dana's year + recent activity
+    const seasonEnd = {};
+    list.forEach(g => g.sts.forEach(st => { const id = tail(st.object.id); if (verbOf(st) === 'completed' && id.startsWith('season/')) (seasonEnd[id.slice(7)] = seasonEnd[id.slice(7)] || []).push({ mood: ext(st, 'mood'), days: ext(st, 'days'), texts: ext(st, 'texts') }); }));
+    h += `<div class="grid2"><div class="card"><h2>Dana's year</h2><p class="sub">Averages at the end of each season. Mood is 0 to 100.</p>`;
+    const seasonRows = SEASONS.filter(s => seasonEnd[s]);
+    if (!seasonRows.length) h += `<p class="empty">No seasons finished yet.</p>`;
+    seasonRows.forEach(s => {
+      const a = seasonEnd[s], avg = k => a.reduce((x, y) => x + (+y[k] || 0), 0) / a.length;
+      const mood = Math.round(avg('mood'));
+      h += `<div class="row" title="${a.length} games finished ${cap(s)}"><div class="label">${cap(s)}<small>${avg('days').toFixed(1)} days with a problem · ${avg('texts').toFixed(1)} texts asking for an update</small></div><div class="bar"><span style="width:${mood}%"></span></div><div class="val">${mood}</div></div>`;
+    });
+    h += `</div>`;
+
+    const recent = list.flatMap(g => g.sts).filter(st => ['initialized', 'answered', 'passed', 'failed', 'completed'].includes(verbOf(st))).sort((a, b) => a.timestamp < b.timestamp ? 1 : -1).slice(0, 12);
+    h += `<div class="card"><h2>Recent activity</h2><ul class="feed">`;
+    recent.forEach(st => {
+      const v = verbOf(st), disp = (st.verb.display && st.verb.display['en-US']) || v;
+      const cls = v === 'passed' ? 'ok' : v === 'failed' ? 'bad' : '';
+      h += `<li><span>${esc(st.actor.name)} <span class="tag ${cls}">${esc(disp)}</span> ${esc(nameOf(st))}</span><span class="when">${ago(st.timestamp)}</span></li>`;
+    });
+    h += `</ul></div></div>`;
+    out.innerHTML = h;
+  }
+
+  function ago(ts) {
+    const s = Math.round((Date.now() - new Date(ts)) / 1000);
+    if (s < 60) return 'just now'; if (s < 3600) return Math.round(s / 60) + ' min ago';
+    if (s < 86400) return Math.round(s / 3600) + ' h ago';
+    return new Date(ts).toLocaleDateString([], { month: 'short', day: 'numeric' });
+  }
+
+  load();
+})();
+</script>
+</body>
+</html>

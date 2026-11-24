@@ -94,9 +94,9 @@
       { id: 'next', from: 'call', label: 'Tell Dana what happens next, and when' }
     ],
     decisions: [
-      { id: 'spring.care.photo', label: 'Asked for a photo of the inverter lights', type: 'do', actions: ['photo'], clues: ['call'] },
-      { id: 'spring.care.wifi', label: 'Skipped Wi-Fi troubleshooting', type: 'avoid', actions: ['wifi'], clues: ['monitoring'] },
-      { id: 'spring.care.next', label: 'Told Dana what happens next', type: 'do', actions: ['next'], clues: [] }
+      { id: 'spring.care.photo', label: 'Asked for a photo of the inverter lights', goal: 'Ask for a photo of the inverter lights', type: 'do', actions: ['photo'], clues: ['call'] },
+      { id: 'spring.care.wifi', label: 'Skipped Wi-Fi troubleshooting', goal: 'Skip Wi-Fi troubleshooting', type: 'avoid', actions: ['wifi'], clues: ['monitoring'] },
+      { id: 'spring.care.next', label: 'Told Dana what happens next', goal: 'Tell Dana what happens next', type: 'do', actions: ['next'], clues: [] }
     ],
     react(s, p) {
       if (P(p, 'photo')) return { face: 'neutral', x: 'Sending it now. The little screen says E-21.' };
@@ -148,9 +148,9 @@
       { id: 'mia', from: 'board', group: 'tech', label: 'Book Mia · Wed, Apr 16 (first opening)' }
     ],
     decisions: [
-      { id: 'spring.dispatch.ray', label: 'Booked the certified tech', type: 'do', actions: ['ray'], clues: ['parts'] },
+      { id: 'spring.dispatch.ray', label: 'Booked the certified tech', goal: 'Book the certified tech', type: 'do', actions: ['ray'], clues: ['parts'] },
       { id: 'spring.dispatch.mia', label: "Didn't book the first opening just because it was first", type: 'avoid', actions: ['mia'], clues: ['parts'] },
-      { id: 'spring.dispatch.confirm', label: 'Confirmed the visit with Dana', type: 'do', actions: ['confirm'], clues: [] }
+      { id: 'spring.dispatch.confirm', label: 'Confirmed the visit with Dana', goal: 'Confirm the visit with Dana', type: 'do', actions: ['confirm'], clues: [] }
     ],
     react(s, p) {
       if (P(p, 'confirm')) return { face: 'happy', x: (P(p, 'mia') ? 'Wednesday? I’m at work, but my neighbor can open the gate.' : 'Thursday works, I’m home all day.') + ' Gate code is 4410. Biscuit barks, but he’s friendly.' };
@@ -209,8 +209,8 @@
       { id: 'reset', from: 'inverter', label: 'Power-cycle the inverter and see if it clears' }
     ],
     decisions: [
-      { id: 'spring.field.replace', label: 'Replaced the faulty inverter', type: 'do', actions: ['replace'], clues: ['inverter'] },
-      { id: 'spring.field.test', label: 'Tested before leaving', type: 'do', actions: ['test'], clues: [] },
+      { id: 'spring.field.replace', label: 'Replaced the faulty inverter', goal: 'Replace the faulty inverter', type: 'do', actions: ['replace'], clues: ['inverter'] },
+      { id: 'spring.field.test', label: 'Tested before leaving', goal: 'Test before leaving', type: 'do', actions: ['test'], clues: [] },
       { id: 'spring.field.reset', label: "Didn't count on a reset", type: 'avoid', actions: ['reset'], clues: ['manual'] },
       { id: 'spring.field.clean', label: "Didn't spend the visit cleaning panels", type: 'avoid', actions: ['clean'], clues: [] }
     ],
@@ -269,8 +269,8 @@
       { id: 'explain', from: 'closeout', label: 'Explain what the tech replaced' }
     ],
     decisions: [
-      { id: 'spring.care2.monitor', label: 'Answered from what monitoring showed', type: 'do', actions: s => s.flags.partial ? ['recheck'] : ['confirmprod'], clues: ['monitoring'] },
-      { id: 'spring.care2.explain', label: 'Explained the repair', type: 'do', actions: ['explain'], clues: ['closeout'] },
+      { id: 'spring.care2.monitor', label: 'Answered from what monitoring showed', goal: 'Answer from what monitoring shows', type: 'do', actions: s => s.flags.partial ? ['recheck'] : ['confirmprod'], clues: ['monitoring'] },
+      { id: 'spring.care2.explain', label: 'Explained the repair', goal: 'Explain the repair', type: 'do', actions: ['explain'], clues: ['closeout'] },
       { id: 'spring.care2.close', label: "Didn't just close the ticket", type: 'avoid', actions: ['close'], clues: ['monitoring'] }
     ],
     react(s, p) {
@@ -325,10 +325,10 @@
       { id: 'note', from: 'history', label: 'Add a note to the account for Care' }
     ],
     decisions: [
-      { id: 'summer.billing.call', label: 'Reached out to Dana', type: 'do', actions: ['call'], clues: ['alert'] },
+      { id: 'summer.billing.call', label: 'Reached out to Dana', goal: 'Reach out to Dana', type: 'do', actions: ['call'], clues: ['alert'] },
       { id: 'summer.billing.wait', label: "Didn't just wait on automatic reminders", type: 'avoid', actions: ['wait'], clues: ['policy'] },
-      { id: 'summer.billing.autopay', label: 'Fixed autopay, not just this month', type: 'do', actions: ['autopay'], clues: ['alert'] },
-      { id: 'summer.billing.note', label: 'Left a note for Care', type: 'do', actions: ['note'], clues: ['history'] }
+      { id: 'summer.billing.autopay', label: 'Fixed autopay, not just this month', goal: 'Fix autopay, not just this month', type: 'do', actions: ['autopay'], clues: ['alert'] },
+      { id: 'summer.billing.note', label: 'Left a note for Care', goal: 'Leave a note for Care', type: 'do', actions: ['note'], clues: ['history'] }
     ],
     resolve(s, p) {
       const L = [], M = [];
@@ -385,8 +385,11 @@
       { id: 'waive', from: 'policy', label: 'Waive the late fee' }
     ],
     decisions: [
-      { id: 'summer.care.fix', label: 'Gave the right answer for the account', type: 'do', actions: s => s.flags.autopayFixed ? ['explain'] : ['updatecard'], clues: ['notes', 'payments'] },
-      { id: 'summer.care.transfer', label: 'Handled it without a transfer', type: 'avoid', actions: ['transfer'], clues: ['notes'] }
+      { id: 'summer.care.fix', label: 'Gave the right answer for the account', goal: 'Give the right answer for the account', type: 'do', actions: s => s.flags.autopayFixed ? ['explain'] : ['updatecard'], clues: ['notes', 'payments'] },
+      { id: 'summer.care.transfer', label: 'Handled it without a transfer', goal: 'Handle it without a transfer', type: 'avoid', actions: ['transfer'], clues: ['notes'] },
+      // The step's second pick: waive the fee if Dana was charged one, otherwise recap her account. One of these is scored per game.
+      { id: 'summer.care.waive', label: 'Waived the late fee', goal: 'Waive the late fee', type: 'do', actions: ['waive'], clues: ['policy'], when: s => s.flags.lateFee },
+      { id: 'summer.care.recap', label: 'Recapped her account', goal: 'Recap her account: card, autopay, next payment', type: 'do', actions: ['recap'], clues: ['payments'], when: s => !s.flags.lateFee }
     ],
     resolve(s, p) {
       const L = [], M = [];
@@ -438,10 +441,10 @@
       { id: 'removal', from: 'system', group: 'request', label: 'Open a removal request' }
     ],
     decisions: [
-      { id: 'fall.care.both', label: 'Opened both requests', type: 'do', actions: ['both'], clues: ['system'] },
+      { id: 'fall.care.both', label: 'Opened both requests', goal: 'Open both requests', type: 'do', actions: ['both'], clues: ['system'] },
       { id: 'fall.care.roofer', label: "Didn't let the roofer remove the panels", type: 'avoid', actions: ['roofer'], clues: ['lease'] },
-      { id: 'fall.care.fee', label: 'Explained the fee up front', type: 'do', actions: ['fee'], clues: ['lease'] },
-      { id: 'fall.care.date', label: 'Captured the roofer’s date and contact', type: 'do', actions: ['date'], clues: ['call'] }
+      { id: 'fall.care.fee', label: 'Explained the fee up front', goal: 'Explain the fee up front', type: 'do', actions: ['fee'], clues: ['lease'] },
+      { id: 'fall.care.date', label: 'Captured the roofer’s date and contact', goal: 'Capture the roofer’s date and contact', type: 'do', actions: ['date'], clues: ['call'] }
     ],
     resolve(s, p) {
       const L = [], M = [];
@@ -492,10 +495,10 @@
       { id: 'callroofer', from: 'roofer', label: 'Call the roofer to line up dates' }
     ],
     decisions: [
-      { id: 'fall.dispatch.removal', label: 'Removal before the roof starts', type: 'do', actions: ['r13'], clues: ['requests', 'roofer'] },
-      { id: 'fall.dispatch.reinstall', label: 'Booked the reinstall in advance', type: 'do', actions: ['i21'], clues: ['crews'] },
+      { id: 'fall.dispatch.removal', label: 'Removal before the roof starts', goal: 'Book the removal before the roof work starts', type: 'do', actions: ['r13'], clues: ['requests', 'roofer'] },
+      { id: 'fall.dispatch.reinstall', label: 'Booked the reinstall in advance', goal: 'Book the reinstall in advance', type: 'do', actions: ['i21'], clues: ['crews'] },
       { id: 'fall.dispatch.wait', label: "Didn't wait to book the reinstall", type: 'avoid', actions: ['iwait'], clues: ['jobs'] },
-      { id: 'fall.dispatch.confirm', label: 'Confirmed dates with Dana', type: 'do', actions: ['confirm'], clues: [] }
+      { id: 'fall.dispatch.confirm', label: 'Confirmed dates with Dana', goal: 'Confirm dates with Dana', type: 'do', actions: ['confirm'], clues: [] }
     ],
     resolve(s, p) {
       const L = [], M = [];
@@ -537,8 +540,8 @@
       { id: 'seal', from: 'roof', label: 'Check flashing and seals on reinstall' }
     ],
     decisions: [
-      { id: 'fall.field.layout', label: 'Labeled the layout before removal', type: 'do', actions: ['layout'], clues: [] },
-      { id: 'fall.field.seal', label: 'Checked the seals', type: 'do', actions: ['seal'], clues: ['roof', 'forecast'] },
+      { id: 'fall.field.layout', label: 'Labeled the layout before removal', goal: 'Label the layout before removal', type: 'do', actions: ['layout'], clues: [] },
+      { id: 'fall.field.seal', label: 'Checked the seals', goal: 'Check the seals', type: 'do', actions: ['seal'], clues: ['roof', 'forecast'] },
       { id: 'fall.field.driveway', label: "Didn't leave panels by the driveway", type: 'avoid', actions: ['driveway'], clues: ['site'] }
     ],
     resolve(s, p) {
@@ -592,10 +595,10 @@
       { id: 'issues', from: 'account', label: s => (s.flags.leak || s.flags.lowOutput || s.flags.cracked || s.flags.lateFee) ? 'Get the open issues fixed before closing' : 'Schedule a pre-sale system inspection' }
     ],
     decisions: [
-      { id: 'winter.accounts.packet', label: 'Started the transfer right away', type: 'do', actions: ['packet'], clues: ['rules'] },
+      { id: 'winter.accounts.packet', label: 'Started the transfer right away', goal: 'Start the transfer right away', type: 'do', actions: ['packet'], clues: ['rules'] },
       { id: 'winter.accounts.wait', label: "Didn't wait on the title company", type: 'avoid', actions: ['waittitle'], clues: ['rules', 'title'] },
-      { id: 'winter.accounts.title', label: 'Recorded the closing details', type: 'do', actions: ['title'], clues: ['email'] },
-      { id: 'winter.accounts.issues', label: 'Cleared open issues before closing', type: 'do', actions: ['issues'], clues: ['account'], when: s => s.flags.leak || s.flags.lowOutput || s.flags.cracked || s.flags.lateFee }
+      { id: 'winter.accounts.title', label: 'Recorded the closing details', goal: 'Record the closing details', type: 'do', actions: ['title'], clues: ['email'] },
+      { id: 'winter.accounts.issues', label: 'Cleared open issues before closing', goal: 'Clear open issues before closing', type: 'do', actions: ['issues'], clues: ['account'], when: s => s.flags.leak || s.flags.lowOutput || s.flags.cracked || s.flags.lateFee }
     ],
     resolve(s, p) {
       const L = [], M = [];
@@ -642,9 +645,9 @@
       { id: 'nextmonth', from: 'sam', label: 'Start billing Sam next month' }
     ],
     decisions: [
-      { id: 'winter.billing.final', label: 'Set the final bill date', type: 'do', actions: ['final'], clues: ['transfer'] },
-      { id: 'winter.billing.stopauto', label: "Stopped Dana's autopay", type: 'do', actions: ['stopauto'], clues: ['policy'] },
-      { id: 'winter.billing.sam', label: "Set up Sam's payments", type: 'do', actions: ['samsetup'], clues: ['sam'] },
+      { id: 'winter.billing.final', label: 'Set the final bill date', goal: 'Set the final bill date', type: 'do', actions: ['final'], clues: ['transfer'] },
+      { id: 'winter.billing.stopauto', label: "Stopped Dana's autopay", goal: "Turn off Dana's autopay after the final bill", type: 'do', actions: ['stopauto'], clues: ['policy'] },
+      { id: 'winter.billing.sam', label: "Set up Sam's payments", goal: "Set up Sam's account and autopay", type: 'do', actions: ['samsetup'], clues: ['sam'] },
       { id: 'winter.billing.cancel', label: "Didn't cancel the lease", type: 'avoid', actions: ['cancel'], clues: ['policy'] }
     ],
     resolve(s, p) {
@@ -694,10 +697,10 @@
       { id: 'lease', from: 'sam', label: 'Walk Sam through every term of his lease' }
     ],
     decisions: [
-      { id: 'winter.care.refund', label: 'Refunded the wrong charge', type: 'do', actions: ['refund'], clues: ['charges'], when: s => s.flags.danaCharged },
-      { id: 'winter.care.confirm', label: 'Confirmed Dana’s account is closed', type: 'do', actions: ['confirmfinal'], clues: ['notes', 'charges'] },
-      { id: 'winter.care.welcome', label: 'Welcomed the new owner', type: 'do', actions: ['welcome'], clues: ['sam'] },
-      { id: 'winter.care.transfer', label: 'Handled it without a transfer', type: 'avoid', actions: ['transfer'], clues: ['notes'] }
+      { id: 'winter.care.refund', label: 'Refunded the wrong charge', goal: 'Refund the wrong charge', type: 'do', actions: ['refund'], clues: ['charges'], when: s => s.flags.danaCharged },
+      { id: 'winter.care.confirm', label: 'Confirmed Dana’s account is closed', goal: 'Confirm Dana’s account is closed', type: 'do', actions: ['confirmfinal'], clues: ['notes', 'charges'] },
+      { id: 'winter.care.welcome', label: 'Welcomed the new owner', goal: 'Welcome the new owner', type: 'do', actions: ['welcome'], clues: ['sam'] },
+      { id: 'winter.care.transfer', label: 'Handled it without a transfer', goal: 'Handle it without a transfer', type: 'avoid', actions: ['transfer'], clues: ['notes'] }
     ],
     resolve(s, p) {
       const L = [], M = [];
@@ -728,8 +731,8 @@
   const OBJECTIVE_OF = {
     1: ['spring.care.photo', 'summer.billing.note', 'fall.care.both', 'fall.care.date', 'winter.accounts.title'],
     2: ['summer.care.fix', 'fall.dispatch.removal', 'fall.dispatch.reinstall', 'winter.billing.final', 'winter.care.confirm'],
-    3: ['summer.care.transfer', 'winter.care.refund', 'winter.care.welcome', 'winter.care.transfer'],
-    4: ['spring.care.next', 'spring.dispatch.confirm', 'spring.care2.explain', 'summer.billing.call', 'fall.care.fee', 'fall.dispatch.confirm']
+    3: ['summer.care.transfer', 'summer.care.waive', 'winter.care.refund', 'winter.care.welcome', 'winter.care.transfer'],
+    4: ['spring.care.next', 'summer.care.recap', 'spring.dispatch.confirm', 'spring.care2.explain', 'summer.billing.call', 'fall.care.fee', 'fall.dispatch.confirm']
   };
   steps.forEach(st => (st.decisions || []).forEach(d => {
     d.objective = +(Object.keys(OBJECTIVE_OF).find(n => OBJECTIVE_OF[n].includes(d.id)) || 5);

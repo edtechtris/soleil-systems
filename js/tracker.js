@@ -91,7 +91,7 @@
       id: uuid(),
       timestamp: new Date().toISOString(),
       actor: { objectType: 'Agent', name: playerName, account: { homePage: BASE, name: playerId } },
-      verb: { id: VERBS[verb][0], display: { 'en-US': VERBS[verb][1] } },
+      verb: { id: VERBS[verb][0], display: { 'en-US': o.display || VERBS[verb][1] } },
       object: path === 'game' ? GAME : activity(path, name, o.type, o.description),
       context: {
         registration: session.sessionId,

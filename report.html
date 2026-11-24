@@ -149,7 +149,7 @@
         const verb = verbOf(st), id = tail(st.object.id);
         if (['passed', 'failed', 'evaluated'].includes(verb) && id.startsWith('decision/')) {
           const r = { session: s.sessionId, player: s.playerId, cohort: s.cohort || '', season: ext(st, 'season'), role: ext(st, 'team') || ext(st, 'role'), id: id.replace('decision/', ''),
-            label: st.object.definition.name['en-US'], type: ext(st, 'decisionType'), outcome: ext(st, 'outcome'), sawClue: ext(st, 'sawClue'), objective: ext(st, 'objective'), country: ext(st, 'country') || '' };
+            label: (ext(st, 'decisionType') === 'avoid' && ((st.object.definition.description || {})['en-US'] || '').split('Wrong action to avoid: ')[1]) || st.object.definition.name['en-US'], type: ext(st, 'decisionType'), outcome: ext(st, 'outcome'), sawClue: ext(st, 'sawClue'), objective: ext(st, 'objective'), country: ext(st, 'country') || '' };
           rows.push(r);
           const d = decisions[r.id] = decisions[r.id] || { label: r.label, type: r.type, season: r.season, role: r.role, n: 0, caught: 0, guessed: 0, missed: 0, avoided: 0, fell_for: 0 };
           d.n++; d[r.outcome]++;

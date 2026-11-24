@@ -80,7 +80,7 @@
           <h1>Starting with Soleil</h1>
           <p class="tag">One homeowner. One year. Every team.</p>
           <button class="btn primary big" id="go">Start</button>
-          <p class="fine">Soleil Systems is a fictional company. Your choices are saved on this device to help improve the game.</p>
+          <p class="fine">Soleil Systems is a fictional company. To improve the game, we record your choices, your country and your time zone. We don’t collect your name or email.</p>
         </div>
       </section>`, { noSeason: true });
     $('#go').onclick = () => { T.track('initialized', 'game', 'Starting with Soleil', null, { screen: `${innerWidth}x${innerHeight}` }); welcome(); };
@@ -407,7 +407,7 @@
       let outcome;
       if (d.type === 'avoid') outcome = chose ? 'fell_for' : 'avoided';
       else outcome = chose ? (sawClue ? 'caught' : 'guessed') : 'missed';
-      out.push({ id: d.id, label: d.label, type: d.type, outcome, sawClue, season: step.season, role: step.role, objective: d.objective,
+      out.push({ id: d.id, label: d.label, goal: d.goal, type: d.type, outcome, sawClue, season: step.season, role: step.role, objective: d.objective,
         actionLabels: ids.map(id => val(step.actions.find(a => a.id === id).label, S)) });
     });
     return out;
@@ -433,11 +433,11 @@
       { type: 'step', season: seasonCtx(step.season) });
     decisions.forEach(d => {
       const ok = d.outcome === 'caught' || d.outcome === 'avoided' || d.outcome === 'guessed';
-      T.track(ok ? 'passed' : 'failed', `decision/${d.id}`, d.label,
+      T.track(ok ? 'passed' : 'failed', `decision/${d.id}`, d.type === 'avoid' ? d.actionLabels.join(' / ') : (d.goal || d.label),
         { success: ok, response: OUTCOME[d.outcome] },
         { season: d.season, team: C.ROLES[d.role].name, decisionType: d.type, outcome: d.outcome, sawClue: d.sawClue, objective: d.objective },
         { type: 'decision', description: `${stepLabel(step)}. ${d.type === 'do' ? 'Correct action' : 'Wrong action to avoid'}: ${d.actionLabels.join(' / ')}`,
-          season: seasonCtx(d.season), parent: stepParent(step), objective: { n: d.objective, text: C.OBJECTIVES[d.objective] } });
+          season: seasonCtx(d.season), parent: stepParent(step), objective: { n: d.objective, text: C.OBJECTIVES[d.objective] }, display: d.type === 'avoid' ? (ok ? 'avoided' : 'chose') : (ok ? 'did' : 'missed') });
     });
 
     S.stepIndex++;

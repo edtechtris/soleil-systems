@@ -103,6 +103,8 @@
   const pct = (a, b) => b ? Math.round(100 * a / b) : 0;
   const TARGET = Math.round(100 * (CFG.objectiveTarget || 0.75));
   const cap = s => s ? s[0].toUpperCase() + s.slice(1) : '';
+  // For a wrong-action choice, show the wrong action itself (from the record's description).
+  const wrongAction = st => { const d = st.object.definition && st.object.definition.description && st.object.definition.description['en-US'] || ''; const m = d.match(/Wrong action to avoid: (.*)$/); return m ? m[1] : ''; };
 
   let statements = [];
 
@@ -174,7 +176,7 @@
         if (v === 'experienced' && id.startsWith('step/')) g.reached = Math.max(g.reached, SEASONS.indexOf(id.split('/')[1].split('-')[0]));
         if (v === 'answered') g.answered++;
         if (v === 'completed' && id === 'game') { g.finished = true; g.score = st.result && st.result.score && st.result.score.scaled; }
-        if ((v === 'passed' || v === 'failed') && id.startsWith('decision/')) decisions.push({ game: g.id, id: id.slice(9), label: nameOf(st), ok: v === 'passed', type: ext(st, 'decisionType'), outcome: ext(st, 'outcome'), objective: +ext(st, 'objective'), season: ext(st, 'season'), team: ext(st, 'team') });
+        if ((v === 'passed' || v === 'failed') && id.startsWith('decision/')) decisions.push({ game: g.id, id: id.slice(9), label: nameOf(st), wrong: wrongAction(st), ok: v === 'passed', type: ext(st, 'decisionType'), outcome: ext(st, 'outcome'), objective: +ext(st, 'objective'), season: ext(st, 'season'), team: ext(st, 'team') });
       });
     });
     const played = list.filter(g => g.answered > 0);
@@ -211,13 +213,13 @@
     h += `</div>`;
 
     const byChoice = {};
-    decisions.forEach(d => { const c = byChoice[d.id] = byChoice[d.id] || { label: d.label, type: d.type, objective: d.objective, season: d.season, team: d.team, n: 0, wrong: 0 }; c.n++; if (!d.ok) c.wrong++; });
+    decisions.forEach(d => { const c = byChoice[d.id] = byChoice[d.id] || { label: d.label, wrongLabel: d.wrong, type: d.type, objective: d.objective, season: d.season, team: d.team, n: 0, wrong: 0 }; c.n++; if (!d.ok) c.wrong++; });
     const gaps = Object.values(byChoice).filter(c => c.wrong).sort((a, b) => (b.wrong / b.n) - (a.wrong / a.n) || b.n - a.n).slice(0, 6);
     h += `<div class="card"><h2>Biggest gaps</h2><p class="sub">The choices players get wrong most often.</p>`;
     if (!gaps.length) h += `<p class="empty">No wrong choices yet.</p>`;
     gaps.forEach(c => {
       const p = pct(c.wrong, c.n);
-      h += `<div class="row" title="${c.wrong} of ${c.n} games got this wrong"><div class="label">${c.type === 'avoid' ? 'Chose: ' : 'Missed: '}${esc(c.label)}<small>${cap(c.season)} · ${esc(c.team)} · Objective ${c.objective}</small></div><div class="bar red"><span style="width:${p}%"></span></div><div class="val">${p}%</div></div>`;
+      h += `<div class="row" title="${c.wrong} of ${c.n} games got this wrong"><div class="label">${c.type === 'avoid' && c.wrongLabel ? 'Chose: ' + esc(c.wrongLabel) : 'Missed: ' + esc(c.label)}<small>${cap(c.season)} · ${esc(c.team)} · Objective ${c.objective}</small></div><div class="bar red"><span style="width:${p}%"></span></div><div class="val">${p}%</div></div>`;
     });
     h += `</div></div>`;
 

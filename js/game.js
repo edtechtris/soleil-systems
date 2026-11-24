@@ -80,7 +80,7 @@
           <h1>Starting with Soleil</h1>
           <p class="tag">One homeowner. One year. Every team.</p>
           <button class="btn primary big" id="go">Start</button>
-          <p class="fine">Soleil Systems is a fictional company. To improve the game, we record your choices, your country and your time zone. We don’t collect your name or email.</p>
+          <p class="fine">Soleil Systems is a fictional company. To improve the game, we record your choices, your country and your time zone. We don’t collect your name or email, and we never sell or share your information with third parties.</p>
         </div>
       </section>`, { noSeason: true });
     $('#go').onclick = () => { T.track('initialized', 'game', 'Starting with Soleil', null, { screen: `${innerWidth}x${innerHeight}` }); welcome(); };

@@ -522,6 +522,11 @@
         { type: 'objective', description: 'Choices tied to this objective that the player got right, out of those that applied in this game.' });
     });
     const right = all.filter(d => d.outcome !== 'missed' && d.outcome !== 'fell_for').length;
+    const objResults = Object.keys(C.OBJECTIVES).map(n => {
+      const ds = all.filter(d => d.objective === +n), ok = ds.filter(d => d.outcome !== 'missed' && d.outcome !== 'fell_for').length;
+      return { n: +n, text: C.OBJECTIVES[n], right: ok, total: ds.length };
+    });
+    const certData = { objResults, right, total: all.length, date: new Date() };
     T.track('completed', 'game', 'Starting with Soleil',
       { completion: true, score: { raw: right, min: 0, max: all.length, scaled: all.length ? +(right / all.length).toFixed(3) : 0 } },
       { mood: S.mood, totalDays, texts: S.messages.length, caught: count('caught'), guessed: count('guessed'), missed: count('missed'), avoided: count('avoided'), fellFor: count('fell_for') });
@@ -552,7 +557,8 @@
           <ul class="ye-list">${rows}</ul>
         </div>
         <div class="ye-actions">
-          <button class="btn primary" id="again">Play again</button>
+          <button class="btn primary" id="cert">Certificate</button>
+          <button class="btn" id="again">Play again</button>
           <button class="btn" id="data">Download my choices</button>
           <a class="btn" href="report.html">Team report</a>
         </div>
@@ -560,6 +566,83 @@
       </section>`, { season: 'winter', noSeason: true });
     $('#again').onclick = () => { S.stepIndex = 0; title(); };
     $('#data').onclick = () => T.exportSession();
+    $('#cert').onclick = () => certificate(certData);
+    certificate(certData);
+  }
+
+  /* ---------- certificate of completion (print or save as PDF) ---------- */
+  const NAME_KEY = 'soleil_cert_name'; // the name stays on this device; it is never sent to the LRS
+  function certificate(d) {
+    const $c = sel => document.querySelector(sel);
+    const old = document.getElementById('certOverlay'); if (old) old.remove();
+    const target = Math.round(100 * ((window.BP_CONFIG || {}).objectiveTarget || 0.75));
+    let saved = ''; try { saved = localStorage.getItem(NAME_KEY) || ''; } catch (e) {}
+    const player = (T.session && T.session.playerName) || 'Player';
+    const pct = (a, b) => b ? Math.round(100 * a / b) : 0;
+    const dateText = d.date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+    const rows = d.objResults.map(o => {
+      const p = pct(o.right, o.total), met = o.total && p >= target;
+      return `<div class="cert-row">
+        <span class="cert-num">${o.n}</span>
+        <span class="cert-obj">${esc(o.text)}</span>
+        <span class="cert-bar" aria-hidden="true"><span style="width:${p}%"></span><i style="left:${target}%"></i></span>
+        <span class="cert-score"><b>${o.total ? p + '%' : '–'}</b><small>${o.right} of ${o.total}</small></span>
+        <span class="cert-status ${met ? 'met' : 'not'}">${!o.total ? 'No choices' : met ? '✓ Met' : 'Not yet met'}</span>
+      </div>`;
+    }).join('');
+    const metCount = d.objResults.filter(o => o.total && pct(o.right, o.total) >= target).length;
+    const pop = h(`<div class="overlay cert-overlay" id="certOverlay" role="dialog" aria-modal="true" aria-label="Certificate of completion">
+      <div class="cert-wrap">
+        <div class="cert" id="certSheet">
+          <i class="glass tl"></i><i class="glass tr"></i><i class="glass bl"></i><i class="glass br"></i>
+          <div class="cert-inner">
+            <img class="cert-mark" src="assets/ui/mark.svg" alt="">
+            <p class="kicker">Soleil Systems · Frontline onboarding</p>
+            <h1 class="cert-title">Certificate of Completion</h1>
+            <p class="cert-line">This certifies that</p>
+            <p class="cert-name" id="certName">${esc(saved || player)}</p>
+            <p class="cert-line">completed <b>Starting with Soleil</b>: one year with homeowner Dana Reyes, across all five frontline teams.</p>
+            <h2 class="cert-h">Results by learning objective</h2>
+            <div class="cert-scores">${rows}</div>
+            <div class="cert-foot">
+              <div><b>${dateText}</b><small>Date completed</small></div>
+              <div class="cert-seal"><b>${metCount} of 5</b><small>objectives met</small></div>
+              <div><b>${d.right} of ${d.total}</b><small>choices right overall</small></div>
+            </div>
+            <p class="cert-fine">An objective is met when ${target}% or more of its choices are right. Soleil Systems is a fictional company.</p>
+          </div>
+        </div>
+        <div class="cert-controls">
+          <label>Name on the certificate (optional)
+            <input id="certNameInput" maxlength="60" autocomplete="name" value="${esc(saved)}" placeholder="${esc(player)}">
+            <small>Your name stays on this device. It is not recorded.</small>
+          </label>
+          <div class="cert-buttons">
+            <button class="btn primary" id="certPrint">Save as PDF or print</button>
+            <button class="btn" id="certClose">See your year results</button>
+          </div>
+        </div>
+      </div>
+    </div>`);
+    document.body.appendChild(pop);
+    const input = $c('#certNameInput');
+    input.oninput = () => {
+      const v = input.value.trim();
+      $c('#certName').textContent = v || player;
+      try { if (v) localStorage.setItem(NAME_KEY, v); else localStorage.removeItem(NAME_KEY); } catch (e) {}
+    };
+    const close = () => { const o = document.getElementById('certOverlay'); if (o) o.remove(); document.removeEventListener('keydown', onKey); };
+    const onKey = e => { if (e.key === 'Escape') close(); };
+    document.addEventListener('keydown', onKey);
+    $c('#certClose').onclick = close;
+    $c('#certPrint').onclick = () => {
+      document.body.classList.add('print-cert');
+      const done = () => { document.body.classList.remove('print-cert'); window.removeEventListener('afterprint', done); };
+      window.addEventListener('afterprint', done);
+      window.print();
+      setTimeout(done, 1000 * 60);
+    };
+    $c('#certPrint').focus({ preventScroll: true }); $c('#certOverlay').scrollTop = 0;
   }
 
   /* dev/testing: ?step=n jumps to a step with default state */

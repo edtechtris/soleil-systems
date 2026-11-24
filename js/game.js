@@ -16,6 +16,11 @@
   const shuffle = a => { const x = a.slice(); for (let i = x.length - 1; i > 0; i--) { const j = Math.random() * (i + 1) | 0; [x[i], x[j]] = [x[j], x[i]]; } return x; };
   const FACE = f => `${C.ART}dana-${f === 'happy' ? 'neutral' : f}.webp`; // the happy portrait isn't used
   const moodFace = m => m >= 80 ? 'happy' : m >= 60 ? 'neutral' : m >= 45 ? 'meh' : m >= 30 ? 'impatient' : 'angry';
+  /* names used in the data, so records in the LRS read plainly */
+  const seasonCtx = id => ({ id, name: C.SEASONS[id].name });
+  const stepLabel = step => `${C.SEASONS[step.season].name} · ${C.ROLES[step.role].name}`;
+  const stepParent = step => ({ path: `step/${step.id}`, name: `${stepLabel(step)}: ${val(step.title, S)}`, type: 'step' });
+  const OUTCOME = { caught: 'Checked the information, then chose it', guessed: 'Chose it without checking the information', missed: 'Missed it', avoided: 'Avoided it', fell_for: 'Chose it (a wrong action)' };
   const moodWord = m => m >= 80 ? 'Happy' : m >= 60 ? 'Okay' : m >= 45 ? 'Frustrated' : m >= 30 ? 'Fed up' : 'Upset';
 
   /* ---------- sound ---------- */
@@ -78,7 +83,7 @@
           <p class="fine">Soleil Systems is a fictional company. Your choices are saved on this device to help improve the game.</p>
         </div>
       </section>`, { noSeason: true });
-    $('#go').onclick = () => { T.track('initialized', 'game', 'Starting with Soleil'); welcome(); };
+    $('#go').onclick = () => { T.track('initialized', 'game', 'Starting with Soleil', null, { screen: `${innerWidth}x${innerHeight}` }); welcome(); };
   }
 
   function welcome() {
@@ -126,7 +131,7 @@
       $$('.pips i').forEach((p, i) => p.classList.toggle('on', i < seen.size));
       $('#count').textContent = `Teams viewed: ${seen.size} of ${ids.length}`;
       $('#next').disabled = seen.size < ids.length;
-      T.track('viewed', `intro/team/${id}`, r.name);
+      T.track('viewed', `intro/team/${id}`, `Team intro: ${r.name}`, null, null, { type: 'info', description: r.line });
     });
     $('#next').onclick = meetDana;
   }
@@ -186,7 +191,9 @@
     let startOpened = false, stuckTimer = null, tipShown = false, callRevealed = false;
     const callFace = step.call ? val(step.call.face, S) : null;
 
-    T.track('experienced', `step/${step.id}`, val(step.title, S), null, { season: step.season, role: step.role, mood: S.mood, today: C.fmt(S.today) });
+    T.track('experienced', `step/${step.id}`, `${stepLabel(step)}: ${val(step.title, S)}`, null,
+      { season: step.season, team: role.name, mood: S.mood, gameDate: C.fmt(S.today) },
+      { type: 'step', description: `Choose up to ${step.pick} actions.`, season: seasonCtx(step.season) });
 
     render(`
       <section class="screen play" style="--role:${role.color}">
@@ -247,7 +254,8 @@
       startOpened = true;
       $('.start-item').classList.add('opened');
       $('.casefile h4').textContent = 'Case file';
-      T.track('viewed', `step/${step.id}/start`, st.label, null, { kind: st.kind });
+      T.track('viewed', `step/${step.id}/start`, val(st.sub, S), null, { kind: st.kind },
+        { type: 'info', description: `${stepLabel(step)}: the item the step starts with`, season: seasonCtx(step.season), parent: stepParent(step) });
       showClueList();
       openClue(st.opens);
       if (firstRole && step.tip && step.season === 'spring') showTip(false);
@@ -273,7 +281,8 @@
       const c = step.clues.find(x => x.id === id);
       const first = !viewed.has(id);
       viewed.add(id);
-      T.track('viewed', `step/${step.id}/clue/${id}`, c.label, null, { kind: c.kind, msIntoStep: Date.now() - started, actionsPicked: picked.size });
+      T.track('viewed', `step/${step.id}/clue/${id}`, c.label, null, { kind: c.kind, secondsIntoStep: Math.round((Date.now() - started) / 1000), actionsPickedSoFar: picked.size },
+        { type: 'info', description: `${stepLabel(step)}: ${c.kind === 'optional' ? 'optional information' : 'information'}`, season: seasonCtx(step.season), parent: stepParent(step) });
       $$('.clue').forEach(b => { b.classList.toggle('on', b.dataset.id === id); if (b.dataset.id === id) b.classList.remove('new'); });
       $$('.hotspot').forEach(b => { if (b.dataset.id === id) b.classList.add('seen'); });
       const v = $('.viewer');
@@ -355,7 +364,8 @@
       tipShown = true;
       const t = step.tip;
       $('.tipslot').innerHTML = `<div class="tip"><img src="${t.img}" alt=""><div><b>${esc(t.who)}</b><small>${esc(t.role)}</small><p>“${esc(t.text)}”</p></div></div>`;
-      T.track('viewed', `step/${step.id}/tip`, 'Teammate tip', null, { asked: !!asked, msIntoStep: Date.now() - started });
+      T.track('viewed', `step/${step.id}/tip`, 'Teammate tip', null, { asked: !!asked, secondsIntoStep: Math.round((Date.now() - started) / 1000) },
+        { type: 'info', description: `${stepLabel(step)}: ${step.tip.text}`, season: seasonCtx(step.season), parent: stepParent(step) });
     }
     function offerTip() {
       $('.tipslot').innerHTML = `<button class="ask">Need help? Get a tip</button>`;
@@ -397,7 +407,8 @@
       let outcome;
       if (d.type === 'avoid') outcome = chose ? 'fell_for' : 'avoided';
       else outcome = chose ? (sawClue ? 'caught' : 'guessed') : 'missed';
-      out.push({ id: d.id, label: d.label, type: d.type, outcome, sawClue, season: step.season, role: step.role });
+      out.push({ id: d.id, label: d.label, type: d.type, outcome, sawClue, season: step.season, role: step.role, objective: d.objective,
+        actionLabels: ids.map(id => val(step.actions.find(a => a.id === id).label, S)) });
     });
     return out;
   }
@@ -414,13 +425,20 @@
       moodBefore, moodAfter: S.mood, daysAdded: (S.days[S.season] || 0) - daysBefore, ms: Date.now() - started
     };
     S.results.push(record);
-    const base = (window.BP_CONFIG.activityBase || '').replace(/\/$/, '');
-    T.track('responded', `step/${step.id}`, val(step.title, S),
-      { response: [...picked].join('[,]'), duration: `PT${Math.round(record.ms / 1000)}S` },
-      { season: step.season, role: step.role, cluesViewed: [...viewed], actionsRevealed: revealed.map(a => a.id), moodBefore, moodAfter: S.mood, daysAdded: record.daysAdded });
-    decisions.forEach(d => T.track('evaluated', `decision/${d.id}`, d.label,
-      { success: d.outcome === 'caught' || d.outcome === 'avoided' || d.outcome === 'guessed', extensions: { [`${base}/ext/outcome`]: d.outcome } },
-      { season: d.season, role: d.role, decisionType: d.type, outcome: d.outcome, sawClue: d.sawClue }));
+    const order = revealed.map(a => a.id);
+    T.track('answered', `step/${step.id}`, `${stepLabel(step)}: ${val(step.title, S)}`,
+      { response: record.pickedLabels.join('; '), duration: `PT${Math.round(record.ms / 1000)}S` },
+      { season: step.season, team: C.ROLES[step.role].name, choices: record.picked, choicePositions: record.picked.map(id => order.indexOf(id) + 1),
+        informationOpened: [...viewed], moodBefore, moodAfter: S.mood, daysAdded: record.daysAdded },
+      { type: 'step', season: seasonCtx(step.season) });
+    decisions.forEach(d => {
+      const ok = d.outcome === 'caught' || d.outcome === 'avoided' || d.outcome === 'guessed';
+      T.track(ok ? 'passed' : 'failed', `decision/${d.id}`, d.label,
+        { success: ok, response: OUTCOME[d.outcome] },
+        { season: d.season, team: C.ROLES[d.role].name, decisionType: d.type, outcome: d.outcome, sawClue: d.sawClue, objective: d.objective },
+        { type: 'decision', description: `${stepLabel(step)}. ${d.type === 'do' ? 'Correct action' : 'Wrong action to avoid'}: ${d.actionLabels.join(' / ')}`,
+          season: seasonCtx(d.season), parent: stepParent(step), objective: { n: d.objective, text: C.OBJECTIVES[d.objective] } });
+    });
 
     S.stepIndex++;
     const next = C.steps[S.stepIndex];
@@ -471,7 +489,8 @@
     }).join('<div class="chain-link" aria-hidden="true"></div>');
     const days = S.days[season] || 0;
     const texts = S.messages.filter(m => m.season === season);
-    T.track('completed', `season/${season}`, C.SEASONS[season].name, null, { mood: S.mood, days, texts: texts.length });
+    T.track('completed', `season/${season}`, `${C.SEASONS[season].name}: ${C.SEASONS[season].event}`, { completion: true },
+      { season, mood: S.mood, days, texts: texts.length }, { type: 'season', season: seasonCtx(season) });
     const last = season === 'winter';
     const nextS = SEASON_ORDER[SEASON_ORDER.indexOf(season) + 1];
     render(`
@@ -494,7 +513,17 @@
     const all = S.results.flatMap(r => r.decisions);
     const count = k => all.filter(d => d.outcome === k).length;
     const totalDays = SEASON_ORDER.reduce((a, s) => a + (S.days[s] || 0), 0);
-    T.track('completed', 'game', 'Starting with Soleil', { completion: true },
+    // one score per learning objective, so results read by objective in the LRS
+    Object.keys(C.OBJECTIVES).forEach(n => {
+      const ds = all.filter(d => d.objective === +n), right = ds.filter(d => d.outcome !== 'missed' && d.outcome !== 'fell_for').length;
+      T.track('scored', `objective/${n}`, `Objective ${n}: ${C.OBJECTIVES[n]}`,
+        { score: { raw: right, min: 0, max: ds.length, scaled: ds.length ? +(right / ds.length).toFixed(3) : 0 } },
+        { objective: +n, right, total: ds.length, guessed: ds.filter(d => d.outcome === 'guessed').length },
+        { type: 'objective', description: 'Choices tied to this objective that the player got right, out of those that applied in this game.' });
+    });
+    const right = all.filter(d => d.outcome !== 'missed' && d.outcome !== 'fell_for').length;
+    T.track('completed', 'game', 'Starting with Soleil',
+      { completion: true, score: { raw: right, min: 0, max: all.length, scaled: all.length ? +(right / all.length).toFixed(3) : 0 } },
       { mood: S.mood, totalDays, texts: S.messages.length, caught: count('caught'), guessed: count('guessed'), missed: count('missed'), avoided: count('avoided'), fellFor: count('fell_for') });
     const seasons = SEASON_ORDER.map(s => `
       <div class="ye-season">

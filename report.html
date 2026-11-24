@@ -32,7 +32,12 @@
   .empty { color: var(--muted); font-style: italic; }
   .note { font-size: 13px; color: var(--muted); }
   @media (max-width: 760px) { .stats { grid-template-columns: 1fr 1fr; } .bar { width: 140px; } }
+[hidden] { display: none !important; }
 .scroll { overflow-x: auto; }
+.lrsform { display: grid; gap: 10px; max-width: 520px; margin: 16px 0; padding: 16px; border: 1px solid #ddd; border-radius: 12px; background: #fff; }
+.lrsform label { display: grid; gap: 4px; font-size: 14px; }
+.lrsform label.check { display: flex; gap: 8px; align-items: center; }
+.lrsform input[type=url], .lrsform input:not([type]), .lrsform input[type=password] { padding: 8px; border: 1px solid #ccc; border-radius: 8px; font: inherit; }
 @media (max-width: 600px) { .barcol, td:nth-child(2):has(.bar) { display: none; } table { font-size: 14px; } }
 </style>
 </head>
@@ -42,16 +47,77 @@
   <h1>Starting with Soleil · Results</h1>
   <p class="sub">This report shows which correct actions players chose, which they missed, and which wrong actions they avoided. Soleil Systems is a fictional company.</p>
   <div class="load">
+    <button id="lrsbtn">Load from the LRS</button>
     <button id="local">Use data from this browser</button>
     <label class="file">Load exported JSON files<input id="files" type="file" accept=".json" multiple></label>
     <button id="csv" disabled>Download decisions CSV</button>
     <span id="status" class="note"></span>
   </div>
+  <form id="lrsform" class="lrsform" hidden>
+    <p class="note">Use a key with <b>Read</b> permission. It stays in this browser and is never sent anywhere but your LRS.</p>
+    <label>LRS endpoint <input id="lrsEndpoint" type="url" required></label>
+    <label>Key name (username) <input id="lrsUser" autocomplete="off" required></label>
+    <label>Secret (password) <input id="lrsPass" type="password" autocomplete="off" required></label>
+    <label>Only this cohort (optional) <input id="lrsCohort" placeholder="for example linkedin"></label>
+    <label class="check"><input id="lrsRemember" type="checkbox"> Remember on this device</label>
+    <button type="submit">Load</button>
+  </form>
   <div id="out"><p class="empty" style="margin-top:20px">Load data to see results.</p></div>
 </main>
+<script src="js/config.js"></script>
 <script>
 (function () {
   const STORE = 'bp_sessions_v1';
+  const CFG = window.BP_CONFIG || {};
+  const verbOf = st => st.verb.id.split('/').pop();
+  const OBJ = { 1: 'My role is one piece of a bigger operation.', 2: 'Good service only happens when all the pieces connect.', 3: 'The customer only sees Soleil Systems, not our teams.', 4: 'Silence feels like being ignored.', 5: 'Problem-solving skills are critical to both the customer experience and the success of our teams.' };
+
+  /* ---- load from the LRS (read key typed here, never stored in the game code) ---- */
+  const KEYSTORE = 'soleil_report_lrs';
+  const form = document.getElementById('lrsform');
+  document.getElementById('lrsbtn').onclick = () => {
+    form.hidden = !form.hidden;
+    let saved = {}; try { saved = JSON.parse(localStorage.getItem(KEYSTORE)) || {}; } catch (e) {}
+    document.getElementById('lrsEndpoint').value = saved.endpoint || (CFG.lrs && CFG.lrs.endpoint) || '';
+    document.getElementById('lrsUser').value = saved.user || '';
+    document.getElementById('lrsPass').value = saved.pass || '';
+    document.getElementById('lrsRemember').checked = !!saved.user;
+  };
+  form.onsubmit = async e => {
+    e.preventDefault();
+    const endpoint = document.getElementById('lrsEndpoint').value.replace(/\/?$/, '/');
+    const user = document.getElementById('lrsUser').value.trim(), pass = document.getElementById('lrsPass').value.trim();
+    const cohort = document.getElementById('lrsCohort').value.trim();
+    try { if (document.getElementById('lrsRemember').checked) localStorage.setItem(KEYSTORE, JSON.stringify({ endpoint, user, pass })); else localStorage.removeItem(KEYSTORE); } catch (err) {}
+    const status = document.getElementById('status');
+    const headers = { 'X-Experience-API-Version': '1.0.3', Authorization: 'Basic ' + btoa(user + ':' + pass) };
+    const base = (CFG.activityBase || '').replace(/\/$/, '');
+    let url = endpoint + 'statements?limit=500&activity=' + encodeURIComponent(base + '/game') + '&related_activities=true';
+    const statements = [];
+    try {
+      while (url) {
+        status.textContent = `Loading from the LRS… ${statements.length} records so far`;
+        const res = await fetch(url, { headers });
+        if (res.status === 401 || res.status === 403) throw new Error('The LRS refused the key. Check the name, the secret, and that the key has Read permission.');
+        if (!res.ok) throw new Error('The LRS answered ' + res.status + '.');
+        const data = await res.json();
+        statements.push(...(data.statements || []));
+        url = data.more ? new URL(data.more, endpoint).href : '';
+      }
+    } catch (err) { status.textContent = err.message || 'Could not reach the LRS.'; return; }
+    // one game = one registration
+    const bySession = {};
+    statements.forEach(st => {
+      const reg = st.context && st.context.registration; if (!reg) return;
+      const c = ext(st, 'cohort') || '';
+      if (cohort && c.toLowerCase() !== cohort.toLowerCase()) return;
+      const s = bySession[reg] = bySession[reg] || { sessionId: reg, playerId: st.actor.account ? st.actor.account.name : st.actor.name, cohort: c, statements: [] };
+      s.statements.push(st);
+    });
+    Object.values(bySession).forEach(s => s.statements.sort((a, b) => a.timestamp < b.timestamp ? -1 : 1));
+    analyze(Object.values(bySession), 'the LRS' + (cohort ? ` (cohort: ${cohort})` : ''));
+    form.hidden = true;
+  };
   const SEASONS = ['spring', 'summer', 'fall', 'winter'];
   let rows = [];
   const ext = (st, key) => { const e = (st.context && st.context.extensions) || {}; const k = Object.keys(e).find(x => x.endsWith('/ext/' + key)); return k ? e[k] : undefined; };
@@ -67,22 +133,23 @@
     const seen = new Set(); analyze(all.filter(s => s.sessionId && !seen.has(s.sessionId) && seen.add(s.sessionId)), e.target.files.length + ' file(s)');
   };
   document.getElementById('csv').onclick = () => {
-    const head = 'session,player,cohort,season,role,decision,label,type,outcome,saw_clue\n';
-    const body = rows.map(r => [r.session, r.player, r.cohort, r.season, r.role, r.id, '"' + r.label.replace(/"/g, '""') + '"', r.type, r.outcome, r.sawClue].join(',')).join('\n');
+    const head = 'game,player,cohort,objective,season,team,choice_id,choice,do_or_avoid,outcome,checked_information\n';
+    const q = v => '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"';
+    const body = rows.map(r => [r.session, r.player, q(r.cohort), r.objective || '', r.season, q(r.role), r.id, q(r.label), r.type, r.outcome, r.sawClue].join(',')).join('\n');
     const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([head + body], { type: 'text/csv' })); a.download = 'soleil-decisions.csv'; a.click();
   };
 
   function analyze(sessions, source) {
-    const played = sessions.filter(s => (s.statements || []).some(st => st.verb.display['en-US'] === 'responded'));
-    const finished = played.filter(s => s.statements.some(st => st.verb.display['en-US'] === 'completed' && tail(st.object.id) === 'game'));
+    const played = sessions.filter(s => (s.statements || []).some(st => ['answered', 'responded'].includes(verbOf(st))));
+    const finished = played.filter(s => s.statements.some(st => verbOf(st) === 'completed' && tail(st.object.id) === 'game'));
     rows = [];
     const decisions = {}; const clues = {}; const stepsSeen = {}; const seasonEnd = {};
     played.forEach(s => {
       s.statements.forEach(st => {
-        const verb = st.verb.display['en-US'], id = tail(st.object.id);
-        if (verb === 'evaluated') {
-          const r = { session: s.sessionId, player: s.playerId, cohort: s.cohort || '', season: ext(st, 'season'), role: ext(st, 'role'), id: id.replace('decision/', ''),
-            label: st.object.definition.name['en-US'], type: ext(st, 'decisionType'), outcome: ext(st, 'outcome'), sawClue: ext(st, 'sawClue') };
+        const verb = verbOf(st), id = tail(st.object.id);
+        if (['passed', 'failed', 'evaluated'].includes(verb) && id.startsWith('decision/')) {
+          const r = { session: s.sessionId, player: s.playerId, cohort: s.cohort || '', season: ext(st, 'season'), role: ext(st, 'team') || ext(st, 'role'), id: id.replace('decision/', ''),
+            label: st.object.definition.name['en-US'], type: ext(st, 'decisionType'), outcome: ext(st, 'outcome'), sawClue: ext(st, 'sawClue'), objective: ext(st, 'objective') };
           rows.push(r);
           const d = decisions[r.id] = decisions[r.id] || { label: r.label, type: r.type, season: r.season, role: r.role, n: 0, caught: 0, guessed: 0, missed: 0, avoided: 0, fell_for: 0 };
           d.n++; d[r.outcome]++;
@@ -90,7 +157,7 @@
         if (verb === 'experienced' && id.startsWith('step/')) { const step = id.split('/')[1]; stepsSeen[step] = (stepsSeen[step] || new Set()).add(s.sessionId); }
         const cm = verb === 'viewed' && id.match(/^step\/([^/]+)\/clue\/([^/]+)$/);
         if (cm) { const [, step, clue] = cm; const k = step + ' · ' + clue; const name = (st.object.definition && st.object.definition.name && st.object.definition.name['en-US']) || clue; clues[k] = clues[k] || { step, clue: name, sessions: new Set() }; clues[k].sessions.add(s.sessionId); }
-        if (verb === 'completed' && id.startsWith('season/')) { const sea = id.split('/')[1]; (seasonEnd[sea] = seasonEnd[sea] || []).push({ mood: ext(st, 'mood'), days: ext(st, 'days') }); }
+        if (verb === 'completed' && id.startsWith('season/')) { const sea = id.split('/')[1]; (seasonEnd[sea] = seasonEnd[sea] || []).push({ mood: ext(st, 'mood'), days: ext(st, 'days'), texts: ext(st, 'texts') }); }
       });
     });
     document.getElementById('status').textContent = `${played.length} ${played.length === 1 ? 'game' : 'games'} from ${source}.`;
@@ -110,6 +177,13 @@
     </div>
     <p class="note" style="margin-top:10px">Wrong actions avoided: ${pct(avoidRows.filter(r => r.outcome === 'avoided').length, avoidRows.length)}% (out of ${avoidRows.length}).</p>`;
 
+    html += `<h2>Results by learning objective</h2><p class="sub">Percent of each objective's choices that players got right. "Without checking" is the share of those right answers made without opening the information first.</p><div class="scroll"><table><tr><th>Objective</th><th class="num">Right</th><th class="num">Without checking</th><th class="num">Choices scored</th></tr>`;
+    Object.keys(OBJ).forEach(n => {
+      const r = rows.filter(x => +x.objective === +n); if (!r.length) return;
+      const ok = r.filter(x => x.outcome !== 'missed' && x.outcome !== 'fell_for');
+      html += `<tr><td><b>${n}.</b> ${OBJ[n]}</td><td class="num">${pct(ok.length, r.length)}%</td><td class="num">${pct(ok.filter(x => x.outcome === 'guessed').length, ok.length)}%</td><td class="num">${r.length}</td></tr>`;
+    });
+    html += `</table></div>`;
     html += `<h2>Correct actions</h2><p class="sub">Actions players should choose. "Guessed" means the player chose it without opening the information that pointed to it.</p>
       <div class="legend"><span><i style="background:var(--caught)"></i>Chose it after checking</span><span><i style="background:var(--guessed)"></i>Guessed</span><span><i style="background:var(--missed)"></i>Missed</span></div>`;
     html += table(Object.entries(decisions).filter(([, d]) => d.type === 'do'), d => [['caught', 'var(--caught)'], ['guessed', 'var(--guessed)'], ['missed', 'var(--missed)']]);
@@ -123,10 +197,10 @@
       const [sea, ...rl] = c.step.split('-'); const stepName = sea[0].toUpperCase() + sea.slice(1) + ' · ' + rl.join(' ').replace('care 2', 'care callback');
       html += `<tr><td>${stepName}</td><td>${c.clue}</td><td class="num">${pct(c.sessions.size, n)}% <small>${c.sessions.size} of ${n}</small></td></tr>`;
     });
-    html += `</table></div><h2>Dana's year</h2><div class="scroll"><table><tr><th>Season</th><th class="num">Average days with a problem</th><th class="num">Average mood at season end (0 to 100)</th></tr>`;
+    html += `</table></div><h2>Dana's year</h2><div class="scroll"><table><tr><th>Season</th><th class="num">Average days with a problem</th><th class="num">Average mood at season end (0 to 100)</th><th class="num">Average texts asking for an update</th></tr>`;
     SEASONS.forEach(se => { const a = seasonEnd[se] || []; if (!a.length) return;
       const avg = k => Math.round(a.reduce((x, y) => x + (y[k] || 0), 0) / a.length);
-      html += `<tr><td>${se[0].toUpperCase() + se.slice(1)}</td><td class="num">${avg('days')}</td><td class="num">${avg('mood')}</td></tr>`; });
+      html += `<tr><td>${se[0].toUpperCase() + se.slice(1)}</td><td class="num">${avg('days')}</td><td class="num">${avg('mood')}</td><td class="num">${(a.reduce((x, y) => x + (y.texts || 0), 0) / a.length).toFixed(1)}</td></tr>`; });
     html += `</table></div><p class="note" style="margin-top:20px">Each game played counts once. If a player plays again, that counts as another game.</p>`;
     out.innerHTML = html;
 

@@ -716,5 +716,24 @@
   }
   ];
 
-  window.BP_CONTENT = { ROLES, LEADS, SEASONS, steps, startMood: 70, fmt, ART, ICON };
+  /* Learning objectives (the aha moments). Each scored choice counts toward one.
+     Mapping matches the sheet "Starting with Soleil: What the Game Measures". */
+  const OBJECTIVES = {
+    1: 'My role is one piece of a bigger operation.',
+    2: 'Good service only happens when all the pieces connect.',
+    3: 'The customer only sees Soleil Systems, not our teams.',
+    4: 'Silence feels like being ignored.',
+    5: 'Problem-solving skills are critical to both the customer experience and the success of our teams.'
+  };
+  const OBJECTIVE_OF = {
+    1: ['spring.care.photo', 'summer.billing.note', 'fall.care.both', 'fall.care.date', 'winter.accounts.title'],
+    2: ['summer.care.fix', 'fall.dispatch.removal', 'fall.dispatch.reinstall', 'winter.billing.final', 'winter.care.confirm'],
+    3: ['summer.care.transfer', 'winter.care.refund', 'winter.care.welcome', 'winter.care.transfer'],
+    4: ['spring.care.next', 'spring.dispatch.confirm', 'spring.care2.explain', 'summer.billing.call', 'fall.care.fee', 'fall.dispatch.confirm']
+  };
+  steps.forEach(st => (st.decisions || []).forEach(d => {
+    d.objective = +(Object.keys(OBJECTIVE_OF).find(n => OBJECTIVE_OF[n].includes(d.id)) || 5);
+  }));
+
+  window.BP_CONTENT = { ROLES, LEADS, SEASONS, OBJECTIVES, steps, startMood: 70, fmt, ART, ICON };
 })();

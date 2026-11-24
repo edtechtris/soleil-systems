@@ -54,8 +54,15 @@
   const playerName = 'Player ' + playerId.replace(/-/g, '').slice(0, 4);
   const params = new URLSearchParams(location.search);
   const cohort = (params.get('cohort') || '').trim().slice(0, 60);
+  // Country from the device's time zone setting (no location permission, no IP address).
+  let timeZone = '';
+  try { timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone || ''; } catch (e) {}
+  const countryCode = (window.BP_TZ_COUNTRY || {})[timeZone] || '';
+  let country = '';
+  try { if (countryCode && Intl.DisplayNames) country = new Intl.DisplayNames(['en'], { type: 'region' }).of(countryCode); } catch (e) {}
+  country = country || (window.BP_COUNTRY_NAMES || {})[countryCode] || 'Unknown';
   const session = {
-    sessionId: uuid(), playerId, playerName, cohort,
+    sessionId: uuid(), playerId, playerName, cohort, country, countryCode, timeZone,
     gameVersion: CFG.gameVersion || '', startedAt: new Date().toISOString(), statements: []
   };
   const all = ls.get(STORE, []);
@@ -91,7 +98,7 @@
         platform: 'Starting with Soleil (web)',
         language: 'en-US',
         contextActivities,
-        extensions: ext(Object.assign({ cohort, version: session.gameVersion }, extensions || {}))
+        extensions: ext(Object.assign({ cohort, version: session.gameVersion, country, countryCode, timeZone }, extensions || {}))
       }
     };
     if (result) st.result = result;

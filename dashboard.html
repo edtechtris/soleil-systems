@@ -47,6 +47,9 @@
   form.key label { display: grid; gap: 4px; font-size: 14px; }
   form.key input[type=url], form.key input[type=text], form.key input[type=password] { padding: 8px; border: 1px solid #ccc; border-radius: 8px; font: inherit; }
   form.key label.check { display: flex; gap: 8px; align-items: center; }
+  .bar .target { position: absolute; top: -4px; bottom: -4px; width: 2px; background: var(--ink); border-radius: 1px; }
+  .status { display: inline-block; font-size: 12px; font-weight: 700; margin-left: 6px; white-space: nowrap; }
+  .status.met { color: var(--teal); } .status.not { color: var(--red); } .status.none { color: var(--muted); }
   [hidden] { display: none !important; }
   @media (max-width: 760px) {
     .kpis { grid-template-columns: 1fr 1fr; }
@@ -84,7 +87,7 @@
 
   <div id="out"></div>
 </main>
-<script src="js/config.js?v=0.3.1"></script>
+<script src="js/config.js?v=0.3.3"></script>
 <script>
 (function () {
   const CFG = window.BP_CONFIG || {};
@@ -98,6 +101,7 @@
   const ext = (st, key) => { const e = (st.context && st.context.extensions) || {}; const k = Object.keys(e).find(x => x.endsWith('/ext/' + key)); return k ? e[k] : undefined; };
   const nameOf = st => (st.object.definition && st.object.definition.name && st.object.definition.name['en-US']) || tail(st.object.id);
   const pct = (a, b) => b ? Math.round(100 * a / b) : 0;
+  const TARGET = Math.round(100 * (CFG.objectiveTarget || 0.75));
   const cap = s => s ? s[0].toUpperCase() + s.slice(1) : '';
 
   let statements = [];
@@ -187,13 +191,15 @@
     if (played.length < 10) h += `<p class="warn">Based on ${played.length} ${played.length === 1 ? 'game' : 'games'} with answers. With this few, the percentages can change a lot from one player to the next.</p>`;
 
     // objectives
-    h += `<div class="card"><h2>Learning objectives</h2><p class="sub">Percent of each objective's choices that players got right. "Checked first" is how many of those right choices came after opening the information that pointed to them.</p>`;
-    Object.keys(OBJ).forEach(n => {
-      const ds = decisions.filter(d => d.objective === +n), ok = ds.filter(d => d.ok), chk = ok.filter(d => d.outcome === 'caught' || d.outcome === 'avoided');
-      const p = pct(ok.length, ds.length);
-      h += `<div class="row" title="${ok.length} of ${ds.length} choices right; ${chk.length} after checking">
-        <div class="label"><span class="objnum">${n}</span>${esc(OBJ[n])}<small>${ds.length ? `${ok.length} of ${ds.length} right · ${pct(chk.length, ok.length)}% checked first` : 'No choices scored yet'}</small></div>
-        <div class="bar"><span style="width:${p}%"></span></div>
+    const objStats = Object.keys(OBJ).map(n => { const ds = decisions.filter(d => d.objective === +n), ok = ds.filter(d => d.ok); return { n, ds, ok, p: pct(ok.length, ds.length) }; });
+    const metCount = objStats.filter(o => o.ds.length && o.p >= TARGET).length, scored = objStats.filter(o => o.ds.length).length;
+    h += `<div class="card"><h2>Learning objectives · ${metCount} of 5 met</h2><p class="sub">Percent of each objective's choices that players got right. An objective is met at ${TARGET}% or higher (the black line). "Checked first" is how many of the right choices came after opening the information that pointed to them.${scored < 5 ? ` ${5 - scored} ${5 - scored === 1 ? 'objective has' : 'objectives have'} no choices scored yet.` : ''}</p>`;
+    objStats.forEach(({ n, ds, ok, p }) => {
+      const chk = ok.filter(d => d.outcome === 'caught' || d.outcome === 'avoided');
+      const status = !ds.length ? '<span class="status none">No data</span>' : p >= TARGET ? '<span class="status met">✓ Met</span>' : '<span class="status not">✗ Below target</span>';
+      h += `<div class="row" title="${ok.length} of ${ds.length} choices right; ${chk.length} after checking; target ${TARGET}%">
+        <div class="label"><span class="objnum">${n}</span>${esc(OBJ[n])}${status}<small>${ds.length ? `${ok.length} of ${ds.length} right · ${pct(chk.length, ok.length)}% checked first` : 'No choices scored yet'}</small></div>
+        <div class="bar"><span style="width:${p}%"></span><i class="target" style="left:${TARGET}%"></i></div>
         <div class="val">${ds.length ? p + '%' : '–'}</div></div>`;
     });
     h += `</div>`;
@@ -236,6 +242,14 @@
       h += `<li><span>${esc(st.actor.name)} <span class="tag ${cls}">${esc(disp)}</span> ${esc(nameOf(st))}</span><span class="when">${ago(st.timestamp)}</span></li>`;
     });
     h += `</ul></div></div>`;
+
+    // countries
+    const byCountry = {};
+    list.forEach(g => { const c = g.sts.map(st => ext(st, 'country')).find(Boolean) || 'Not recorded'; const k = byCountry[c] = byCountry[c] || { games: 0, finished: 0 }; k.games++; if (g.finished) k.finished++; });
+    const countries = Object.entries(byCountry).sort((a, b) => b[1].games - a[1].games);
+    h += `<div class="card"><h2>Where players are</h2><p class="sub">Games by country, based on each player's device time zone. A player using a VPN or a changed time zone setting may show the wrong country.</p>`;
+    countries.forEach(([c, k]) => { h += `<div class="row" title="${k.games} games, ${k.finished} finished"><div class="label">${esc(c)}<small>${k.finished} finished</small></div><div class="bar"><span style="width:${pct(k.games, list.length)}%"></span></div><div class="val">${k.games}</div></div>`; });
+    h += `</div>`;
     out.innerHTML = h;
   }
 

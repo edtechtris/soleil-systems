@@ -64,7 +64,7 @@
   </form>
   <div id="out"><p class="empty" style="margin-top:20px">Load data to see results.</p></div>
 </main>
-<script src="js/config.js?v=0.3.1"></script>
+<script src="js/config.js?v=0.3.3"></script>
 <script>
 (function () {
   const STORE = 'bp_sessions_v1';
@@ -133,9 +133,9 @@
     const seen = new Set(); analyze(all.filter(s => s.sessionId && !seen.has(s.sessionId) && seen.add(s.sessionId)), e.target.files.length + ' file(s)');
   };
   document.getElementById('csv').onclick = () => {
-    const head = 'game,player,cohort,objective,season,team,choice_id,choice,do_or_avoid,outcome,checked_information\n';
+    const head = 'game,player,cohort,country,objective,season,team,choice_id,choice,do_or_avoid,outcome,checked_information\n';
     const q = v => '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"';
-    const body = rows.map(r => [r.session, r.player, q(r.cohort), r.objective || '', r.season, q(r.role), r.id, q(r.label), r.type, r.outcome, r.sawClue].join(',')).join('\n');
+    const body = rows.map(r => [r.session, r.player, q(r.cohort), q(r.country), r.objective || '', r.season, q(r.role), r.id, q(r.label), r.type, r.outcome, r.sawClue].join(',')).join('\n');
     const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([head + body], { type: 'text/csv' })); a.download = 'soleil-decisions.csv'; a.click();
   };
 
@@ -149,7 +149,7 @@
         const verb = verbOf(st), id = tail(st.object.id);
         if (['passed', 'failed', 'evaluated'].includes(verb) && id.startsWith('decision/')) {
           const r = { session: s.sessionId, player: s.playerId, cohort: s.cohort || '', season: ext(st, 'season'), role: ext(st, 'team') || ext(st, 'role'), id: id.replace('decision/', ''),
-            label: st.object.definition.name['en-US'], type: ext(st, 'decisionType'), outcome: ext(st, 'outcome'), sawClue: ext(st, 'sawClue'), objective: ext(st, 'objective') };
+            label: st.object.definition.name['en-US'], type: ext(st, 'decisionType'), outcome: ext(st, 'outcome'), sawClue: ext(st, 'sawClue'), objective: ext(st, 'objective'), country: ext(st, 'country') || '' };
           rows.push(r);
           const d = decisions[r.id] = decisions[r.id] || { label: r.label, type: r.type, season: r.season, role: r.role, n: 0, caught: 0, guessed: 0, missed: 0, avoided: 0, fell_for: 0 };
           d.n++; d[r.outcome]++;
@@ -178,11 +178,11 @@
     </div>
     <p class="note" style="margin-top:10px">Wrong actions avoided: ${pct(avoidRows.filter(r => r.outcome === 'avoided').length, avoidRows.length)}% (out of ${avoidRows.length}).</p>`;
 
-    html += `<h2>Results by learning objective</h2><p class="sub">Percent of each objective's choices that players got right. "Without checking" is the share of those right answers made without opening the information first.</p><div class="scroll"><table><tr><th>Objective</th><th class="num">Right</th><th class="num">Without checking</th><th class="num">Choices scored</th></tr>`;
+    html += `<h2>Results by learning objective</h2><p class="sub">Percent of each objective's choices that players got right. "Without checking" is the share of those right answers made without opening the information first.</p><div class="scroll"><table><tr><th>Objective</th><th class="num">Right</th><th class="num">Without checking</th><th class="num">Choices scored</th><th>Target (${Math.round(100 * (CFG.objectiveTarget || 0.75))}%)</th></tr>`;
     Object.keys(OBJ).forEach(n => {
       const r = rows.filter(x => +x.objective === +n); if (!r.length) return;
       const ok = r.filter(x => x.outcome !== 'missed' && x.outcome !== 'fell_for');
-      html += `<tr><td><b>${n}.</b> ${OBJ[n]}</td><td class="num">${pct(ok.length, r.length)}%</td><td class="num">${pct(ok.filter(x => x.outcome === 'guessed').length, ok.length)}%</td><td class="num">${r.length}</td></tr>`;
+      html += `<tr><td><b>${n}.</b> ${OBJ[n]}</td><td class="num">${pct(ok.length, r.length)}%</td><td class="num">${pct(ok.filter(x => x.outcome === 'guessed').length, ok.length)}%</td><td class="num">${r.length}</td><td>${pct(ok.length, r.length) >= Math.round(100 * (CFG.objectiveTarget || 0.75)) ? '✓ Met' : '✗ Below target'}</td></tr>`;
     });
     html += `</table></div>`;
     html += `<h2>Correct actions</h2><p class="sub">Actions players should choose. "Guessed" means the player chose it without opening the information that pointed to it.</p>
